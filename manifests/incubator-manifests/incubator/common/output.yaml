@@ -1,0 +1,20 @@
+[debug] Created tunnel using local port: '37633'
+
+[debug] SERVER: "127.0.0.1:37633"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/common
+
+NAME:   sanguine-ladybird
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:57 2018
+CHART: common-0.0.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+{}
+
+HOOKS:
+MANIFEST:
+

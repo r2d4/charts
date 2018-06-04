@@ -1,0 +1,111 @@
+
+---
+# Source: kube-state-metrics/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rude-kangaroo-kube-state-metrics
+  labels:
+    app: kube-state-metrics
+    chart: "kube-state-metrics-0.7.1"
+    release: "rude-kangaroo"
+    heritage: "Tiller"
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  type: "ClusterIP"
+  ports:
+  - name: "http"
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: kube-state-metrics
+    release: rude-kangaroo
+---
+# Source: kube-state-metrics/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rude-kangaroo-kube-state-metrics
+  labels:
+    app: kube-state-metrics
+    chart: "kube-state-metrics-0.7.1"
+    release: "rude-kangaroo"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kube-state-metrics
+        release: "rude-kangaroo"
+    spec:
+      serviceAccountName: "default"
+      containers:
+      - name: kube-state-metrics
+        args:
+
+        - --collectors=cronjobs
+
+
+        - --collectors=daemonsets
+
+
+        - --collectors=deployments
+
+
+        - --collectors=endpoints
+
+
+        - --collectors=horizontalpodautoscalers
+
+
+        - --collectors=jobs
+
+
+        - --collectors=limitranges
+
+
+        - --collectors=namespaces
+
+
+        - --collectors=nodes
+
+
+        - --collectors=persistentvolumeclaims
+
+
+        - --collectors=persistentvolumes
+
+
+        - --collectors=pods
+
+
+        - --collectors=replicasets
+
+
+        - --collectors=replicationcontrollers
+
+
+        - --collectors=resourcequotas
+
+
+        - --collectors=services
+
+
+        - --collectors=statefulsets
+
+
+        imagePullPolicy: IfNotPresent
+        image: "k8s.gcr.io/kube-state-metrics:v1.2.0"
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+            null

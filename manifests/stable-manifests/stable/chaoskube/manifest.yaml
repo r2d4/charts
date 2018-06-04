@@ -1,0 +1,42 @@
+
+---
+# Source: chaoskube/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: messy-woodpecker-chaoskube
+  labels:
+    app: messy-woodpecker-chaoskube
+    chart: chaoskube-0.7.0
+    release: messy-woodpecker
+    heritage: Tiller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: messy-woodpecker-chaoskube
+        chart: chaoskube-0.7.0
+        release: messy-woodpecker
+        heritage: Tiller
+    spec:
+      containers:
+      - name: chaoskube
+        image: quay.io/linki/chaoskube:v0.8.0
+        args:
+        - --interval=10m
+        - --labels=
+        - --annotations=
+        - --namespaces=
+        - --excluded-weekdays=
+        - --excluded-times-of-day=
+        - --excluded-days-of-year=
+        - --timezone=UTC
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 10m
+            memory: 16Mi
+      serviceAccountName: "default"

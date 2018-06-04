@@ -1,0 +1,93 @@
+[debug] Created tunnel using local port: '39175'
+
+[debug] SERVER: "127.0.0.1:39175"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/check-mk
+
+NAME:   quelling-gecko
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:57 2018
+CHART: check-mk-0.2.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: nlmacamp/check_mk
+  tag: latest
+ingress:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  enabled: false
+  hosts:
+  - monitor.ijuned.com
+  tls: null
+replicaCount: 1
+resources: {}
+service:
+  externalPort: 80
+  internalPort: 5000
+  name: check-mk
+  type: NodePort
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: check-mk/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: quelling-gecko-check-mk
+  labels:
+    app: check-mk
+    chart: check-mk-0.2.1
+    release: quelling-gecko
+    heritage: Tiller
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 5000
+      protocol: TCP
+      name: check-mk
+  selector:
+    app: check-mk
+    release: quelling-gecko
+---
+# Source: check-mk/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: quelling-gecko-check-mk
+  labels:
+    app: check-mk
+    chart: check-mk-0.2.1
+    release: quelling-gecko
+    heritage: Tiller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: check-mk
+        release: quelling-gecko
+    spec:
+      containers:
+        - name: check-mk
+          image: "nlmacamp/check_mk:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+          resources:
+            {}

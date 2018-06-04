@@ -1,0 +1,594 @@
+[debug] Created tunnel using local port: '46323'
+
+[debug] SERVER: "127.0.0.1:46323"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/istio
+
+NAME:   gangly-whale
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:58 2018
+CHART: istio-0.2.13-chart4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+addons:
+  grafana:
+    deployment:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      image: docker.io/istio/grafana
+      imagePullPolicy: IfNotPresent
+      name: grafana
+      nodeSelector: {}
+      replicas: 1
+      resources: {}
+    enabled: true
+    service:
+      externalPort: 3000
+      type: NodePort
+  prometheus:
+    deployment:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      image: quay.io/coreos/prometheus
+      imagePullPolicy: IfNotPresent
+      imageTag: v1.1.1
+      name: prometheus
+      nodeSelector: {}
+      replicas: 1
+      resources: {}
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: "true"
+      externalPort: 9090
+      type: NodePort
+  servicegraph:
+    deployment:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      image: docker.io/istio/servicegraph
+      imagePullPolicy: IfNotPresent
+      name: servicegraph
+      nodeSelector: {}
+      replicas: 1
+      resources: {}
+    enabled: true
+    service:
+      externalPort: 8088
+      type: NodePort
+  zipkin:
+    deployment:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      image: docker.io/openzipkin/zipkin
+      imagePullPolicy: IfNotPresent
+      imageTag: latest
+      name: zipkin
+      nodeSelector: {}
+      replicas: 1
+      resources: {}
+    enabled: true
+    service:
+      externalPort: 9411
+      type: NodePort
+auth:
+  enabled: true
+ca:
+  deployment:
+    annotations:
+      sidecar.istio.io/inject: "false"
+    image: docker.io/istio/istio-ca
+    imagePullPolicy: IfNotPresent
+    name: ca
+    nodeSelector: {}
+    replicas: 1
+    resources: {}
+egress:
+  deployment:
+    annotations:
+      sidecar.istio.io/inject: "false"
+    image: docker.io/istio/proxy_debug
+    imagePullPolicy: IfNotPresent
+    name: egress
+    nodeSelector: {}
+    replicas: 1
+    resources: {}
+  service:
+    externalHttpPort: 80
+    type: ClusterIP
+ingress:
+  deployment:
+    annotations:
+      sidecar.istio.io/inject: "false"
+    image: docker.io/istio/proxy_debug
+    imagePullPolicy: IfNotPresent
+    name: ingress
+    nodeSelector: {}
+    replicas: 1
+    resources: null
+  service:
+    externalHttpPort: 80
+    externalHttpsPort: 443
+    type: LoadBalancer
+initializer:
+  customConfigMap: false
+  deployment:
+    annotations:
+      sidecar.istio.io/inject: "false"
+    image: docker.io/istio/sidecar_initializer
+    imagePullPolicy: IfNotPresent
+    initImage: docker.io/istio/proxy_init
+    name: initializer
+    nodeSelector: {}
+    proxyImage: docker.io/istio/proxy
+    replicas: 1
+    resources: {}
+  enabled: false
+  policy: enabled
+istio:
+  install: false
+  release: 0.2.12
+mixer:
+  customConfigMap: false
+  deployment:
+    annotations:
+      sidecar.istio.io/inject: "false"
+    image: docker.io/istio/mixer
+    imagePullPolicy: IfNotPresent
+    name: mixer
+    nodeSelector: {}
+    replicas: 1
+    resources: {}
+  service:
+    annotations: {}
+    externalConfigApiPort: 9094
+    externalHttpHeathPort: 9093
+    externalPrometheusPort: 42422
+    externalStatsdPromPort: 9102
+    externalStatsdUdpPort: 9125
+    externalTcpPort: 9091
+    type: ClusterIP
+pilot:
+  customConfigMap: false
+  deployment:
+    annotations:
+      sidecar.istio.io/inject: "false"
+    discovery:
+      image: docker.io/istio/pilot
+      imagePullPolicy: IfNotPresent
+      name: discovery
+      resources: {}
+    nodeSelector: {}
+    replicas: 1
+  name: pilot
+  service:
+    externalAdmissionWebhookServer: 443
+    externalHttpDiscovery: 8080
+    type: ClusterIP
+rbac:
+  apiVersion: v1beta1
+  install: false
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: reportnothings.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: reportnothing
+    istio: mixer-instance
+spec:
+  group: config.istio.io
+  names:
+    kind: reportnothing
+    plural: reportnothings
+    singular: reportnothing
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: svcctrls.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: svcctrl
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: svcctrl
+    plural: svcctrls
+    singular: svcctrl
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: stdios.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: stdio
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: stdio
+    plural: stdios
+    singular: stdio
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: rules.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: istio.io.mixer
+    istio: core
+spec:
+  group: config.istio.io
+  names:
+    kind: rule
+    plural: rules
+    singular: rule
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: attributemanifests.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: istio.io.mixer
+    istio: core
+spec:
+  group: config.istio.io
+  names:
+    kind: attributemanifest
+    plural: attributemanifests
+    singular: attributemanifest
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: memquotas.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: memquota
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: memquota
+    plural: memquotas
+    singular: memquota
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: listentries.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: listentry
+    istio: mixer-instance
+spec:
+  group: config.istio.io
+  names:
+    kind: listentry
+    plural: listentries
+    singular: listentry
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: metrics.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: metric
+    istio: mixer-instance
+spec:
+  group: config.istio.io
+  names:
+    kind: metric
+    plural: metrics
+    singular: metric
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: listcheckers.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: listchecker
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: listchecker
+    plural: listcheckers
+    singular: listchecker
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: noops.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: noop
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: noop
+    plural: noops
+    singular: noop
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: prometheuses.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: prometheus
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: prometheus
+    plural: prometheuses
+    singular: prometheus
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: logentries.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: logentry
+    istio: mixer-instance
+spec:
+  group: config.istio.io
+  names:
+    kind: logentry
+    plural: logentries
+    singular: logentry
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: deniers.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: denier
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: denier
+    plural: deniers
+    singular: denier
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: checknothings.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: checknothing
+    istio: mixer-instance
+spec:
+  group: config.istio.io
+  names:
+    kind: checknothing
+    plural: checknothings
+    singular: checknothing
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: quotas.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: quota
+    istio: mixer-instance
+spec:
+  group: config.istio.io
+  names:
+    kind: quota
+    plural: quotas
+    singular: quota
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: stackdrivers.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: stackdriver
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: stackdriver
+    plural: stackdrivers
+    singular: stackdriver
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/mixer.yaml
+kind: CustomResourceDefinition
+apiVersion: apiextensions.k8s.io/v1beta1
+metadata:
+  name: statsds.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+    package: statsd
+    istio: mixer-adapter
+spec:
+  group: config.istio.io
+  names:
+    kind: statsd
+    plural: statsds
+    singular: statsd
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/pilot.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: routerules.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+spec:
+  group: config.istio.io
+  names:
+    kind: RouteRule
+    listKind: RouteRuleList
+    plural: routerules
+    singular: routerule
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/pilot.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: egressrules.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+spec:
+  group: config.istio.io
+  names:
+    kind: EgressRule
+    listKind: EgressRuleList
+    plural: egressrules
+    singular: egressrule
+  scope: Namespaced
+  version: v1alpha2
+---
+# Source: istio/templates/custom-resources/pilot.yaml
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: destinationpolicies.config.istio.io
+  labels:
+    app: istio
+    heritage: "Tiller"
+    release: "gangly-whale"
+    chart: istio-0.2.13-chart4
+spec:
+  group: config.istio.io
+  names:
+    kind: DestinationPolicy
+    listKind: DestinationPolicyList
+    plural: destinationpolicies
+    singular: destinationpolicy
+  scope: Namespaced
+  version: v1alpha2

@@ -1,0 +1,560 @@
+[debug] Created tunnel using local port: '39845'
+
+[debug] SERVER: "127.0.0.1:39845"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/nginx-ingress
+
+NAME:   mewing-ibex
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:28 2018
+CHART: nginx-ingress-0.20.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+controller:
+  affinity: {}
+  autoscaling:
+    enabled: false
+  config: {}
+  customTemplate:
+    configMapKey: ""
+    configMapName: ""
+  daemonset:
+    useHostPort: false
+  defaultBackendService: ""
+  dnsPolicy: ClusterFirst
+  electionID: ingress-controller-leader
+  extraArgs: {}
+  extraContainers: {}
+  extraEnvs: []
+  extraVolumeMounts: {}
+  extraVolumes: {}
+  headers: {}
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
+    tag: 0.14.0
+  ingressClass: nginx
+  kind: Deployment
+  lifecycle: {}
+  livenessProbe:
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    port: 10254
+    successThreshold: 1
+    timeoutSeconds: 1
+  metrics:
+    enabled: false
+    service:
+      annotations: {}
+      clusterIP: ""
+      externalIPs: []
+      loadBalancerIP: ""
+      loadBalancerSourceRanges: []
+      servicePort: 9913
+      type: ClusterIP
+  minAvailable: 1
+  minReadySeconds: 0
+  name: controller
+  nodeSelector: {}
+  podAnnotations: {}
+  podLabels: {}
+  publishService:
+    enabled: false
+    pathOverride: ""
+  readinessProbe:
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    port: 10254
+    successThreshold: 1
+    timeoutSeconds: 1
+  replicaCount: 1
+  resources: {}
+  scope:
+    enabled: false
+    namespace: ""
+  service:
+    annotations: {}
+    clusterIP: ""
+    externalIPs: []
+    externalTrafficPolicy: ""
+    healthCheckNodePort: 0
+    labels: {}
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    nodePorts:
+      http: ""
+      https: ""
+    targetPorts:
+      http: http
+      https: https
+    type: LoadBalancer
+  stats:
+    enabled: false
+    service:
+      annotations: {}
+      clusterIP: ""
+      externalIPs: []
+      loadBalancerIP: ""
+      loadBalancerSourceRanges: []
+      servicePort: 18080
+      type: ClusterIP
+  tolerations: []
+  updateStrategy: {}
+defaultBackend:
+  affinity: {}
+  enabled: true
+  extraArgs: {}
+  image:
+    pullPolicy: IfNotPresent
+    repository: k8s.gcr.io/defaultbackend
+    tag: "1.3"
+  minAvailable: 1
+  name: default-backend
+  nodeSelector: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  resources: {}
+  service:
+    annotations: {}
+    clusterIP: ""
+    externalIPs: []
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    servicePort: 80
+    type: ClusterIP
+  tolerations: []
+imagePullSecrets: []
+rbac:
+  create: true
+revisionHistoryLimit: 10
+serviceAccount:
+  create: true
+  name: null
+tcp: {}
+udp: {}
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: nginx-ingress/templates/controller-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "controller"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-controller
+data:
+  enable-vts-status: "false"
+---
+# Source: nginx-ingress/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress
+---
+# Source: nginx-ingress/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - endpoints
+      - nodes
+      - pods
+      - secrets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+---
+# Source: nginx-ingress/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mewing-ibex-nginx-ingress
+subjects:
+  - kind: ServiceAccount
+    name: mewing-ibex-nginx-ingress
+    namespace: default
+---
+# Source: nginx-ingress/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - pods
+      - secrets
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - ingress-controller-leader-nginx
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - endpoints
+    verbs:
+      - create
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+---
+# Source: nginx-ingress/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mewing-ibex-nginx-ingress
+subjects:
+  - kind: ServiceAccount
+    name: mewing-ibex-nginx-ingress
+    namespace: default
+---
+# Source: nginx-ingress/templates/controller-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "controller"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-controller
+spec:
+  clusterIP: ""
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+  selector:
+    app: nginx-ingress
+    component: "controller"
+    release: mewing-ibex
+  type: "LoadBalancer"
+---
+# Source: nginx-ingress/templates/default-backend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "default-backend"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-default-backend
+spec:
+  clusterIP: ""
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: http
+  selector:
+    app: nginx-ingress
+    component: "default-backend"
+    release: mewing-ibex
+  type: "ClusterIP"
+---
+# Source: nginx-ingress/templates/controller-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "controller"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-controller
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    {}
+    
+  minReadySeconds: 0
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+        component: "controller"
+        release: mewing-ibex
+    spec:
+      dnsPolicy: ClusterFirst
+      containers:
+        - name: nginx-ingress-controller
+          image: "quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.14.0"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - /nginx-ingress-controller
+            - --default-backend-service=default/mewing-ibex-nginx-ingress-default-backend
+            - --election-id=ingress-controller-leader
+            - --ingress-class=nginx
+            - --configmap=default/mewing-ibex-nginx-ingress-controller
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: https
+              containerPort: 443
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            {}
+            
+      hostNetwork: false
+      serviceAccountName: mewing-ibex-nginx-ingress
+      terminationGracePeriodSeconds: 60
+---
+# Source: nginx-ingress/templates/default-backend-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "default-backend"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-default-backend
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+        component: "default-backend"
+        release: mewing-ibex
+    spec:
+      containers:
+        - name: nginx-ingress-default-backend
+          image: "k8s.gcr.io/defaultbackend:1.3"
+          imagePullPolicy: "IfNotPresent"
+          args:
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {}
+            
+      terminationGracePeriodSeconds: 60
+---
+# Source: nginx-ingress/templates/controller-poddisruptionbudget.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "controller"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-controller
+spec:
+  selector:
+    matchLabels:
+      app: nginx-ingress
+      release: mewing-ibex
+      component: "controller"
+  minAvailable: 1
+---
+# Source: nginx-ingress/templates/default-backend-poddisruptionbudget.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: nginx-ingress
+    chart: nginx-ingress-0.20.1
+    component: "default-backend"
+    heritage: Tiller
+    release: mewing-ibex
+  name: mewing-ibex-nginx-ingress-default-backend
+spec:
+  selector:
+    matchLabels:
+      app: nginx-ingress
+      release: mewing-ibex
+      component: "default-backend"
+  minAvailable: 1

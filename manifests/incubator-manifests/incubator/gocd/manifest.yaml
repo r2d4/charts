@@ -1,0 +1,250 @@
+
+---
+# Source: gocd/templates/test-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: turbulent-bunny-gocd-tests
+  labels:
+    app: gocd
+    chart: "gocd-0.2.5"
+    release: "turbulent-bunny"
+    heritage: "Tiller"
+data:
+  run.sh: |-
+    @test "Testing GoCD UI is accessible" {
+        curl --connect-timeout 10 --retry 12 --retry-delay 10 --retry-max-time 90 "http://turbulent-bunny-gocd-server:8153/go/auth/login"
+    }
+
+    @test "Testing GoCD application is accessible through service" {
+      curl --retry 2 --retry-delay 10 --retry-max-time 90 http://turbulent-bunny-gocd-server:8153/go
+    }
+---
+# Source: gocd/templates/gocd-server-pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: turbulent-bunny-gocd-server
+  labels:
+    app: gocd
+    chart: "gocd-0.2.5"
+    release: "turbulent-bunny"
+    heritage: "Tiller"
+    component: server
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "2Gi"
+---
+# Source: gocd/templates/gocd-ea-service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: turbulent-bunny-gocd
+  labels:
+    chart: "gocd-0.2.5"
+    app: "turbulent-bunny-gocd"
+    heritage: "Tiller"
+    release: "turbulent-bunny"
+---
+# Source: gocd/templates/gocd-ea-cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: turbulent-bunny-gocd
+  labels:
+    chart: "gocd-0.2.5"
+    app: "turbulent-bunny-gocd"
+    heritage: "Tiller"
+    release: "turbulent-bunny"
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  - pods/log
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - nodes
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: ["list", "watch"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs: ["list", "get"]
+---
+# Source: gocd/templates/gocd-ea-cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: turbulent-bunny-gocd
+  labels:
+    chart: "gocd-0.2.5"
+    app: "turbulent-bunny-gocd"
+    heritage: "Tiller"
+    release: "turbulent-bunny"
+subjects:
+- kind: ServiceAccount
+  name: turbulent-bunny-gocd
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: turbulent-bunny-gocd
+---
+# Source: gocd/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: turbulent-bunny-gocd-server
+  annotations:
+  labels:
+    app: gocd
+    chart: "gocd-0.2.5"
+    release: "turbulent-bunny"
+    heritage: "Tiller"
+    component: server
+spec:
+  type: NodePort
+  ports:
+    - port: 8153
+      targetPort: 8153
+      protocol: TCP
+      name: http
+
+    - port: 8154
+      targetPort: 8154
+      protocol: TCP
+      name: https
+  selector:
+    app: gocd
+    release: "turbulent-bunny"
+    component: server
+---
+# Source: gocd/templates/gocd-agent-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: turbulent-bunny-gocd-agent
+  labels:
+    app: gocd
+    chart:  "gocd-0.2.5"
+    release: "turbulent-bunny"
+    heritage: "Tiller"
+    component: agent
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: gocd
+      release: "turbulent-bunny"
+      component: agent
+  template:
+    metadata:
+      labels:
+        app: gocd
+        release: "turbulent-bunny"
+        component: agent
+    spec:
+      containers:
+        - name: gocd-agent
+          image: "gocd/gocd-agent-alpine-3.6:v18.1.0"
+          imagePullPolicy: IfNotPresent
+          resources:
+            {}
+            
+          env:
+            - name: GO_SERVER_URL
+              value: "https://turbulent-bunny-gocd-server:8154/go"
+---
+# Source: gocd/templates/gocd-server-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: turbulent-bunny-gocd-server
+  labels:
+    app: gocd
+    chart: "gocd-0.2.5"
+    release: "turbulent-bunny"
+    heritage: "Tiller"
+    component: server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gocd
+      release: "turbulent-bunny"
+      component: server
+  template:
+    metadata:
+      labels:
+        app: gocd
+        release: "turbulent-bunny"
+        component: server
+    spec:
+      volumes:
+        - name: goserver-vol
+          persistentVolumeClaim:
+            claimName: turbulent-bunny-gocd-server
+      containers:
+        - name: gocd-server
+          image: "gocd/gocd-server:v18.1.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GOCD_PLUGIN_INSTALL_kubernetes-elastic-agents
+              value: https://github.com/gocd/kubernetes-elastic-agents/releases/download/v0.0.1/kubernetes-elastic-agent-0.0.1-0.jar
+            
+          ports:
+            - containerPort: 8153
+            - containerPort: 8154
+          livenessProbe:
+            httpGet:
+              path: /go/api/v1/health
+              port: 8153
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /go/api/v1/health
+              port: 8153
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            failureThreshold: 10
+          volumeMounts:
+            - name: goserver-vol
+              mountPath: /godata
+              subPath: godata
+            - name: goserver-vol
+              mountPath: /home/go
+              subPath: homego
+            - name: goserver-vol
+              mountPath: /docker-entrypoint.d
+              subPath: scripts
+          resources:
+            {}
+---
+# Source: gocd/templates/ingress.yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: turbulent-bunny-gocd-server
+  labels:
+    app: gocd
+    chart: "gocd-0.2.5"
+    release: "turbulent-bunny"
+    heritage: "Tiller"
+    component: server
+  annotations:
+spec:
+  backend:
+    serviceName: turbulent-bunny-gocd-server
+    servicePort: 8153
+  rules:

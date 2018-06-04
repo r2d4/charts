@@ -1,0 +1,131 @@
+[debug] Created tunnel using local port: '44615'
+
+[debug] SERVER: "127.0.0.1:44615"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/tensorflow-serving
+
+NAME:   wishing-serval
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:37 2018
+CHART: tensorflow-serving-0.1.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: cheyang/tf-model-server
+  tag: "1.4"
+modelBasePath: /serving/inception-export
+modelName: inception
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+port: 9090
+replicas: 1
+resources: {}
+serviceType: LoadBalancer
+
+HOOKS:
+---
+# wishing-serval-tensorflow-serving
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wishing-serval-tensorflow-serving
+  labels:
+    heritage: "Tiller"
+    release: "wishing-serval"
+    chart: tensorflow-serving-0.1.2
+    app: wishing-serval-tensorflow-serving
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "10Gi"
+MANIFEST:
+
+---
+# Source: tensorflow-serving/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wishing-serval-tensorflow-serving
+  labels:
+    heritage: "Tiller"
+    release: "wishing-serval"
+    chart: tensorflow-serving-0.1.2
+    app: tensorflow-serving
+spec:
+  type: LoadBalancer
+  ports:
+    - name: serving
+      port: 9090
+      targetPort: serving
+  selector:
+    release: "wishing-serval"
+    app: tensorflow-serving
+---
+# Source: tensorflow-serving/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wishing-serval-tensorflow-serving
+  labels:
+    heritage: "Tiller"
+    release: "wishing-serval"
+    chart: tensorflow-serving-0.1.2
+    app: tensorflow-serving
+  annotations:
+    "helm.sh/created": "1527976837"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      release: "wishing-serval"
+      app: tensorflow-serving 
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "wishing-serval"
+        chart: tensorflow-serving-0.1.2
+        app: tensorflow-serving
+    spec:
+      containers:
+        - name: serving
+          image: "cheyang/tf-model-server:1.4"
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - "/usr/bin/tensorflow_model_server"
+          args:
+            - "--port=9090"
+            - "--model_name=inception"
+            - "--model_base_path=/serving/inception-export"
+          ports:
+            - containerPort: 9090
+              name: serving
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: serving
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+          resources:
+            {}
+            
+          volumeMounts:
+            - mountPath: /data
+              name: model-volume
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+              claimName: wishing-serval-tensorflow-serving

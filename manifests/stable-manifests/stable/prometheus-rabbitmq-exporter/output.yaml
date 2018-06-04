@@ -1,0 +1,121 @@
+[debug] Created tunnel using local port: '32941'
+
+[debug] SERVER: "127.0.0.1:32941"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/prometheus-rabbitmq-exporter
+
+NAME:   quiet-mink
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:31 2018
+CHART: prometheus-rabbitmq-exporter-0.1.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+annotation: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: kbudde/rabbitmq-exporter
+  tag: v0.28.0
+loglevel: info
+nodeSelector: {}
+rabbitmq:
+  capabilities: bert,no_sort
+  include_queues: .*
+  password: guest
+  skip_queues: ^$
+  url: http://myrabbit:15672
+  user: guest
+replicaCount: 1
+resources: {}
+service:
+  externalPort: 9419
+  internalPort: 9419
+  type: ClusterIP
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: prometheus-rabbitmq-exporter/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: quiet-mink-prometheus-rabbitmq-exporter
+  labels:
+    app: prometheus-rabbitmq-exporter
+    chart: prometheus-rabbitmq-exporter-0.1.3
+    release: quiet-mink
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9419
+      targetPort: 9419
+      protocol: TCP
+      name: rabbitmq-exporter
+  selector:
+    app: prometheus-rabbitmq-exporter
+    release: quiet-mink
+---
+# Source: prometheus-rabbitmq-exporter/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: quiet-mink-prometheus-rabbitmq-exporter
+  labels:
+    app: prometheus-rabbitmq-exporter
+    chart: prometheus-rabbitmq-exporter-0.1.3
+    release: quiet-mink
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-rabbitmq-exporter
+      release: quiet-mink
+  template:
+    metadata:
+      labels:
+        app: prometheus-rabbitmq-exporter
+        release: quiet-mink
+      annotations:
+        null
+        
+    spec:
+      containers:
+        - name: prometheus-rabbitmq-exporter
+          image: "kbudde/rabbitmq-exporter:v0.28.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RABBIT_URL
+              value: "http://myrabbit:15672"
+            - name: RABBIT_USER
+              value: "guest"
+            - name: RABBIT_PASSWORD
+              value: "guest"
+            - name: PUBLISH_PORT
+              value: "9419"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: RABBIT_CAPABILITIES
+              value: "bert,no_sort"
+            - name: INCLUDE_QUEUES
+              value: ".*"
+            - name: SKIP_QUEUES
+              value: "^$"
+          ports:
+            - containerPort: 9419
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9419
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9419
+          resources:
+            {}

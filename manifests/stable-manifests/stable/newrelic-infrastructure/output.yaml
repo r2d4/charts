@@ -1,0 +1,89 @@
+[debug] Created tunnel using local port: '33531'
+
+[debug] SERVER: "127.0.0.1:33531"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/newrelic-infrastructure
+
+NAME:   wishing-chimp
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:27 2018
+CHART: newrelic-infrastructure-0.4.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: newrelic/infrastructure-k8s
+  tag: 1.0.0-beta1.0
+nodeSelector: {}
+rbac:
+  create: true
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+serviceAccount:
+  create: true
+  name: null
+tolerations: []
+updateStrategy: RollingUpdate
+verboseLog: false
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: newrelic-infrastructure/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: newrelic-infrastructure
+    chart: newrelic-infrastructure-0.4.0
+    heritage: "Tiller"
+    release: "wishing-chimp"
+  name: wishing-chimp-newrelic-infrastructure
+---
+# Source: newrelic-infrastructure/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  labels:     
+    app: newrelic-infrastructure
+    chart: newrelic-infrastructure-0.4.0
+    heritage: Tiller
+    release: wishing-chimp
+  name: wishing-chimp-newrelic-infrastructure
+rules:
+- apiGroups: [""]
+  resources:
+    - "nodes"
+    - "nodes/stats"
+    - "nodes/proxy"
+    - "pods"
+    - "services"
+  verbs: ["get", "list"]
+---
+# Source: newrelic-infrastructure/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:     
+    app: newrelic-infrastructure
+    chart: newrelic-infrastructure-0.4.0
+    heritage: Tiller
+    release: wishing-chimp
+  name: wishing-chimp-newrelic-infrastructure
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: wishing-chimp-newrelic-infrastructure
+subjects:
+- kind: ServiceAccount
+  name: wishing-chimp-newrelic-infrastructure
+  namespace: default

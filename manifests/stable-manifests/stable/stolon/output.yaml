@@ -1,0 +1,455 @@
+[debug] Created tunnel using local port: '42553'
+
+[debug] SERVER: "127.0.0.1:42553"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/stolon
+
+NAME:   lumpy-stingray
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:36 2018
+CHART: stolon-0.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+debug: false
+etcdImage:
+  pullPolicy: IfNotPresent
+  repository: k8s.gcr.io/etcd-amd64
+  tag: 2.2.5
+image:
+  pullPolicy: IfNotPresent
+  repository: sorintlab/stolon
+  tag: v0.10.0-pg10
+keeper:
+  affinity: {}
+  annotations: {}
+  nodeSelector: {}
+  replicaCount: 2
+  resources: {}
+  service:
+    annotations: {}
+    ports:
+      keeper:
+        port: 5432
+        protocol: TCP
+        targetPort: 5432
+    type: ClusterIP
+  tolerations: []
+persistence:
+  accessModes:
+  - ReadWriteOnce
+  enabled: true
+  size: 10Gi
+  storageClassName: ""
+pgParameters: {}
+ports:
+  metrics:
+    containerPort: 8080
+  stolon:
+    containerPort: 5432
+proxy:
+  affinity: {}
+  annotations: {}
+  nodeSelector: {}
+  replicaCount: 2
+  resources: {}
+  service:
+    annotations: {}
+    ports:
+      proxy:
+        port: 5432
+        protocol: TCP
+        targetPort: 5432
+    type: ClusterIP
+  tolerations: []
+rbac:
+  create: true
+replicationUsername: repluser
+sentinel:
+  affinity: {}
+  annotations: {}
+  nodeSelector: {}
+  replicaCount: 2
+  resources: {}
+  tolerations: []
+serviceAccount:
+  create: true
+store:
+  backend: kubernetes
+  kubeResourceKind: configmap
+superuserUsername: stolon
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: stolon/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lumpy-stingray-stolon
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+type: Opaque
+data:
+  
+  pg_su_password: "aEV3cFc1TXJuekRSTmFPUG1sUEVoalMxTzlsSEhDbEhqZjA4MVBZYg=="
+  
+
+  
+  pg_repl_password: "dm9nc3c5d2FWY0dTQ21uNnpCcVprY3JzNmZ4Y2puNk9aVDd1U25ZWA=="
+---
+# Source: stolon/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lumpy-stingray-stolon
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+---
+# Source: stolon/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: lumpy-stingray-stolon
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+rules:
+- apiGroups:
+    - ""
+  resources:
+    - pods
+    - endpoints
+    - configmaps
+  verbs:
+    - "*"
+---
+# Source: stolon/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: lumpy-stingray-stolon
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: lumpy-stingray-stolon
+subjects:
+- kind: ServiceAccount
+  name: lumpy-stingray-stolon
+---
+# Source: stolon/templates/keeper-headless-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lumpy-stingray-stolon-keeper-headless
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+  annotations:
+spec:
+  clusterIP: None
+  ports:
+    - name: keeper
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+      
+  selector:
+    app: stolon
+    release: lumpy-stingray
+    component: stolon-keeper
+---
+# Source: stolon/templates/proxy-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lumpy-stingray-stolon-proxy
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - name: proxy
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+      
+  selector:
+    app: stolon
+    release: lumpy-stingray
+    component: stolon-proxy
+---
+# Source: stolon/templates/proxy-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: lumpy-stingray-stolon-proxy
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stolon
+      release: lumpy-stingray
+      component: stolon-proxy
+  template:
+    metadata:
+      labels:
+        app: stolon
+        release: lumpy-stingray
+        component: stolon-proxy
+        stolon-cluster: lumpy-stingray-stolon
+      annotations:
+    spec:
+      containers:
+        - name: stolon
+          image: "sorintlab/stolon:v0.10.0-pg10"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/bash"
+            - "-ec"
+            - |
+              exec gosu stolon stolon-proxy
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: STPROXY_CLUSTER_NAME
+              value: lumpy-stingray-stolon
+            - name: STPROXY_STORE_BACKEND
+              value: "kubernetes"
+            - name: STPROXY_KUBE_RESOURCE_KIND
+              value: "configmap"
+            - name: STPROXY_LISTEN_ADDRESS
+              value: "0.0.0.0"
+            - name: STPROXY_METRICS_LISTEN_ADDRESS
+              value: "0.0.0.0:8080"
+            - name: STPROXY_DEBUG
+              value: "false"
+          ports:
+            - name: metrics
+              containerPort: 8080
+              
+            - name: stolon
+              containerPort: 5432
+              
+          resources:
+            {}
+            
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+---
+# Source: stolon/templates/sentinel-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: lumpy-stingray-stolon-sentinel
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stolon
+      release: lumpy-stingray
+      component: stolon-sentinel
+  template:
+    metadata:
+      labels:
+        app: stolon
+        release: lumpy-stingray
+        component: stolon-sentinel
+        stolon-cluster: lumpy-stingray-stolon
+      annotations:
+    spec:
+      serviceAccountName: lumpy-stingray-stolon
+      containers:
+        - name: stolon
+          image: "sorintlab/stolon:v0.10.0-pg10"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/bash"
+            - "-ec"
+            - |
+              exec gosu stolon stolon-sentinel
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: STSENTINEL_CLUSTER_NAME
+              value: lumpy-stingray-stolon
+            - name: STSENTINEL_STORE_BACKEND
+              value: "kubernetes"
+            - name: STSENTINEL_KUBE_RESOURCE_KIND
+              value: "configmap"
+            - name: STSENTINEL_METRICS_LISTEN_ADDRESS
+              value: "0.0.0.0:8080"
+            - name: STSENTINEL_DEBUG
+              value: "false"
+          resources:
+            {}
+---
+# Source: stolon/templates/keeper-statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: lumpy-stingray-stolon-keeper
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+spec:
+  serviceName: lumpy-stingray-stolon-keeper-headless
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stolon
+      release: lumpy-stingray
+      component: stolon-keeper
+  template:
+    metadata:
+      labels:
+        app: stolon
+        release: lumpy-stingray
+        component: stolon-keeper
+        stolon-cluster: lumpy-stingray-stolon
+      annotations:
+    spec:
+      serviceAccountName: lumpy-stingray-stolon
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: stolon
+          image: "sorintlab/stolon:v0.10.0-pg10"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/bash"
+            - "-ec"
+            - |
+              # Generate our keeper uid using the pod index
+              IFS='-' read -ra ADDR <<< "$(hostname)"
+              export STKEEPER_UID="keeper${ADDR[-1]}"
+              export POD_IP=$(hostname -i)
+              export STKEEPER_PG_LISTEN_ADDRESS=$POD_IP
+              export STOLON_DATA=/stolon-data
+              chown stolon:stolon $STOLON_DATA
+              exec gosu stolon stolon-keeper --data-dir $STOLON_DATA
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: STKEEPER_CLUSTER_NAME
+              value: lumpy-stingray-stolon
+            - name: STKEEPER_STORE_BACKEND
+              value: "kubernetes"
+            - name: STKEEPER_KUBE_RESOURCE_KIND
+              value: "configmap"
+            - name: STKEEPER_PG_REPL_USERNAME
+              value: "repluser"
+            - name: STKEEPER_PG_REPL_PASSWORDFILE
+              value: "/etc/secrets/stolon/pg_repl_password"
+            - name: STKEEPER_PG_SU_USERNAME
+              value: "stolon"
+            - name: STKEEPER_PG_SU_PASSWORDFILE
+              value: "/etc/secrets/stolon/pg_su_password"
+            - name: STKEEPER_METRICS_LISTEN_ADDRESS
+              value: "0.0.0.0:8080"
+            - name: STKEEPER_DEBUG
+              value: "false"
+          ports:
+            - name: metrics
+              containerPort: 8080
+              
+            - name: stolon
+              containerPort: 5432
+              
+          resources:
+            {}
+            
+          volumeMounts:
+          - name: data
+            mountPath: /stolon-data
+          - name: stolon-secrets
+            mountPath: /etc/secrets/stolon
+      volumes:
+        - name: stolon-secrets
+          secret:
+            secretName: lumpy-stingray-stolon
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "10Gi"
+---
+# Source: stolon/templates/create-cluster-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: lumpy-stingray-stolon-create-cluster
+  labels:
+    app: stolon
+    chart: stolon-0.1.0
+    release: lumpy-stingray
+    heritage: Tiller
+  annotations:
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: lumpy-stingray-stolon
+        release: lumpy-stingray
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: lumpy-stingray-stolon
+      containers:
+        - name: lumpy-stingray-stolon
+          image: "sorintlab/stolon:v0.10.0-pg10"
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/local/bin/stolonctl"]
+          args:
+            - init
+            - --cluster-name=lumpy-stingray-stolon
+            - --store-backend=kubernetes
+            - --kube-resource-kind=configmap
+            - --yes
+            - '{"initMode":"new"}'

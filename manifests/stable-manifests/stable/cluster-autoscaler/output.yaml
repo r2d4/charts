@@ -1,0 +1,104 @@
+[debug] Created tunnel using local port: '32981'
+
+[debug] SERVER: "127.0.0.1:32981"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/cluster-autoscaler
+
+NAME:   nuanced-unicorn
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:15 2018
+CHART: cluster-autoscaler-0.6.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+autoDiscovery:
+  clusterName: null
+autoscalingGroups: []
+autoscalingGroupsnamePrefix: []
+awsRegion: us-east-1
+cloudConfigPath: /etc/gce.conf
+cloudProvider: aws
+extraArgs:
+  logtostderr: true
+  stderrthreshold: info
+  v: 4
+image:
+  pullPolicy: IfNotPresent
+  repository: k8s.gcr.io/cluster-autoscaler
+  tag: v1.2.2
+nodeSelector: {}
+podAnnotations: {}
+podDisruptionBudget: |
+  maxUnavailable: 1
+  # minAvailable: 2
+podLabels: {}
+rbac:
+  create: false
+  pspEnabled: false
+  serviceAccountName: default
+replicaCount: 1
+resources: {}
+service:
+  annotations: {}
+  clusterIP: ""
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  portName: http
+  servicePort: 8085
+  type: ClusterIP
+spotinst:
+  account: ""
+  image:
+    pullPolicy: IfNotPresent
+    repository: spotinst/kubernetes-cluster-autoscaler
+    tag: 0.6.0
+  token: ""
+sslCertPath: /etc/ssl/certs/ca-certificates.crt
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: cluster-autoscaler/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: aws-cluster-autoscaler
+    chart: cluster-autoscaler-0.6.4
+    heritage: Tiller
+    release: nuanced-unicorn
+  name: nuanced-unicorn-aws-cluster-autoscaler
+spec:
+  clusterIP: ""
+  ports:
+    - port: 8085
+      protocol: TCP
+      targetPort: 8085
+      name: http
+  selector:
+    app: aws-cluster-autoscaler
+    release: nuanced-unicorn
+  type: "ClusterIP"
+---
+# Source: cluster-autoscaler/templates/pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: aws-cluster-autoscaler
+    chart: cluster-autoscaler-0.6.4
+    heritage: Tiller
+    release: nuanced-unicorn
+  name: nuanced-unicorn-aws-cluster-autoscaler
+spec:
+  selector:
+    matchLabels:
+      app: aws-cluster-autoscaler
+      release: nuanced-unicorn
+  maxUnavailable: 1
+  # minAvailable: 2

@@ -1,0 +1,249 @@
+[debug] Created tunnel using local port: '40233'
+
+[debug] SERVER: "127.0.0.1:40233"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/mssql-linux
+
+NAME:   halting-poodle
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:26 2018
+CHART: mssql-linux-0.4.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+acceptEula:
+  value: "n"
+collation: SQL_Latin1_General_CP1_CI_AS
+edition:
+  value: Express
+hadr: 0
+image:
+  pullPolicy: IfNotPresent
+  repository: microsoft/mssql-server-linux
+  tag: 2017-CU5
+lcid: 1033
+livenessprobe:
+  initialDelaySeconds: 15
+  periodSeconds: 20
+nodeSelector: {}
+persistence:
+  backupAccessMode: ReadWriteOnce
+  backupSize: 1Gi
+  dataAccessMode: ReadWriteOnce
+  dataSize: 1Gi
+  enabled: true
+  masterAccessMode: ReadWriteOnce
+  masterSize: 1Gi
+  storageClass: ""
+  transactionLogAccessMode: ReadWriteOnce
+  transactionLogSize: 1Gi
+readinessprobe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+resources: {}
+service:
+  port: 1433
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: mssql-linux/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: halting-poodle-mssql-linux-secret
+  labels:
+    app: mssql-linux
+    chart: mssql-linux-0.4.0
+    release: halting-poodle
+    heritage: Tiller
+type: Opaque
+data:
+  
+  sapassword: "ZFdFS3FRaE1ncUxOSlI2dVNtQVE="
+---
+# Source: mssql-linux/templates/pvc-backup.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: halting-poodle-mssql-linux-backup
+  labels:
+    app: halting-poodle-mssql-linux
+    chart: "mssql-linux-0.4.0"
+    release: "halting-poodle"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+# Source: mssql-linux/templates/pvc-data.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: halting-poodle-mssql-linux-data
+  labels:
+    app: halting-poodle-mssql-linux
+    chart: "mssql-linux-0.4.0"
+    release: "halting-poodle"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+# Source: mssql-linux/templates/pvc-master.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: halting-poodle-mssql-linux-master
+  labels:
+    app: halting-poodle-mssql-linux
+    chart: "mssql-linux-0.4.0"
+    release: "halting-poodle"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+# Source: mssql-linux/templates/pvc-tranlog.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: halting-poodle-mssql-linux-translog
+  labels:
+    app: halting-poodle-mssql-linux
+    chart: "mssql-linux-0.4.0"
+    release: "halting-poodle"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+# Source: mssql-linux/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: halting-poodle-mssql-linux
+  labels:
+    app: mssql-linux
+    chart: mssql-linux-0.4.0
+    release: halting-poodle
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+  - name: mssql
+    port: 1433
+    targetPort: mssql
+    protocol: TCP
+  selector:
+    app: mssql-linux
+    release: halting-poodle
+---
+# Source: mssql-linux/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: halting-poodle-mssql-linux
+  labels:
+    app: mssql-linux
+    chart: mssql-linux-0.4.0
+    release: halting-poodle
+    heritage: Tiller
+spec:
+  replicas: 
+  selector:
+    matchLabels:
+      app: mssql-linux
+      release: halting-poodle
+  template:
+    metadata:
+      labels:
+        app: mssql-linux
+        release: halting-poodle
+    spec:
+      containers:
+        - name: mssql-linux
+          image: "microsoft/mssql-server-linux:2017-CU5"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ACCEPT_EULA
+              value: "N"
+            - name: MSSQL_PID
+              value: "Express"
+            - name: SA_PASSWORD
+              valueFrom:
+               secretKeyRef:
+                 name: halting-poodle-mssql-linux-secret
+                 key: sapassword
+            - name: MSSQL_DATA_DIR
+              value: /mssql-data/data
+            - name: MSSQL_LOG_DIR
+              value: /mssql-translog/translog
+            - name: MSSQL_TCP_PORT
+              value: "1433"
+            - name: MSSQL_BACKUP_DIR
+              value: "/mssql-backup/backup"
+            - name: MSSQL_COLLATION
+              value: "SQL_Latin1_General_CP1_CI_AS"
+            - name: MSSQL_LCID
+              value: "1033"
+            - name: MSSQL_MASTER_DATA_FILE
+              value: /mssql-data/master/master.mdf
+            - name: MSSQL_MASTER_LOG_FILE
+              value: /mssql-data/master/mastlog.ldf
+            - name: MSSQL_ENABLE_HADR
+              value: "0"
+          ports:
+            - name: mssql
+              containerPort: 1433
+          volumeMounts:
+            - name: data
+              mountPath: /mssql-data/data
+            - name: transactionlog
+              mountPath: /mssql-translog/translog
+            - name: backup
+              mountPath: /mssql-backup/backup
+            - name: master
+              mountPath: /mssql-data/master
+          livenessProbe:
+             tcpSocket:
+               port: mssql
+             initialDelaySeconds: 15
+             periodSeconds: 20
+          readinessProbe:
+             tcpSocket:
+               port: mssql
+             initialDelaySeconds: 5
+             periodSeconds: 10
+          resources:
+            {}
+            
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: halting-poodle-mssql-linux-data
+      - name: transactionlog
+        persistentVolumeClaim:
+          claimName: halting-poodle-mssql-linux-translog
+      - name: backup
+        persistentVolumeClaim:
+          claimName: halting-poodle-mssql-linux-backup
+      - name: master
+        persistentVolumeClaim:
+          claimName: halting-poodle-mssql-linux-master

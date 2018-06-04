@@ -1,0 +1,229 @@
+[debug] Created tunnel using local port: '38733'
+
+[debug] SERVER: "127.0.0.1:38733"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/signalfx-agent
+
+NAME:   hopping-wolverine
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:34 2018
+CHART: signalfx-agent-0.1.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+agentConfig: null
+agentVersion: 3.1.9
+apiServerSkipVerify: false
+clusterName: null
+collectd: {}
+containerStatsIntervalSeconds: null
+extraPodLabels: {}
+gatherClusterMetrics: true
+gatherDockerMetrics: true
+image:
+  pullPolicy: IfNotPresent
+  pullSecret: null
+  repository: quay.io/signalfx/signalfx-agent
+  tag: null
+kubeletAPI:
+  authType: serviceAccount
+logLevel: info
+metricIntervalSeconds: 15
+metricNamesToExclude:
+- container_cpu_user_seconds_total
+- container_cpu_system_seconds_total
+- container_cpu_utilization_per_core
+- container_fs_reads_total
+- container_fs_sector_reads_total
+- container_fs_reads_merged_total
+- container_fs_read_seconds_total
+- container_fs_writes_total
+- container_fs_sector_writes_total
+- container_fs_writes_merged_total
+- container_fs_write_seconds_total
+- container_fs_io_current
+- container_fs_io_time_seconds_total
+- container_fs_io_time_weighted_seconds_total
+- container_last_seen
+- container_tasks_state
+- pod_network_receive_packets_total
+- pod_network_receive_packets_dropped_total
+- pod_network_transmit_packets_total
+- pod_network_transmit_packets_dropped_total
+- machine_cpu_frequency_khz
+monitors:
+- discoveryRule: container_image =~ "activemq" && private_port == 1099
+  type: collectd/activemq
+- discoveryRule: container_image =~ "apache" && private_port == 80
+  type: collectd/apache
+- discoveryRule: container_image =~ "cassandra" && private_port == 7199
+  type: collectd/cassandra
+- discoveryRule: container_image =~ "consul" && private_port == 8500
+  type: collectd/consul
+- discoveryRule: container_image =~ "elasticsearch" && port == 9200
+  type: collectd/elasticsearch
+- clusterName: my-cluster
+  discoveryRule: container_image =~ "etcd" && port == 2379
+  type: collectd/etcd
+- discoveryRule: container_image =~ "haproxy" && port == 9000
+  type: collectd/haproxy
+- discoveryRule: container_image =~ "kafka" && private_port == 9092
+  type: collectd/kafka
+- discoveryRule: container_image =~ "memcache" && private_port == 11211
+  type: collectd/memcached
+- databases:
+  - mydatabase
+  discoveryRule: container_image =~ "mongo" && private_port == 27017
+  type: collectd/mongodb
+- databases:
+  - name: mydb
+  discoveryRule: container_image =~ "mysql" && private_port == 3306
+  type: collectd/mysql
+  username: admin
+- discoveryRule: container_image =~ "nginx" && private_port == 80
+  type: collectd/nginx
+- discoveryRule: container_image =~ "rabbitmq" && private_port == 15672
+  type: collectd/rabbitmq
+- discoveryRule: container_image =~ "redis" && private_port == 6379
+  type: collectd/redis
+- clusterType: Standalone
+  collectApplicationMetrics: true
+  discoveryRule: container_image =~ "spark" && private_port == 8080
+  isMaster: true
+  type: collectd/spark
+- clusterType: Standalone
+  discoveryRule: container_image =~ "spark" && private_port >= 8081
+  isMaster: false
+  type: collectd/spark
+- discoveryRule: container_image =~ "zookeeper" && private_port == 2181
+  type: collectd/zookeeper
+rbac:
+  create: true
+  customRules: []
+rollingUpdateMaxUnavailable: 1
+runOnMaster: true
+serviceAccount:
+  create: true
+  name: null
+signalFxAccessToken: ""
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: signalfx-agent/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hopping-wolverine-signalfx-agent
+  labels:
+    app: signalfx-agent
+    chart: signalfx-agent-0.1.1
+    heritage: Tiller
+    release: hopping-wolverine
+type: Opaque
+data:
+  access-token: ""
+---
+# Source: signalfx-agent/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: signalfx-agent
+    chart: signalfx-agent-0.1.1
+    heritage: Tiller
+    release: hopping-wolverine
+  name: hopping-wolverine-signalfx-agent
+---
+# Source: signalfx-agent/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hopping-wolverine-signalfx-agent
+  labels:
+    app: signalfx-agent
+    heritage: Tiller
+    release: hopping-wolverine
+    chart: signalfx-agent-0.1.1
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  - namespaces
+  - namespaces/status
+  - nodes
+  - nodes/spec
+  - pods
+  - pods/status
+  - replicationcontrollers
+  - replicationcontrollers/status
+  - services
+  # Only need to be able to view secrets if using k8s annotation
+  # agent.signalfx.com/configWithSecret.*.  You can also whitelist specific
+  # secrets for finer-grain permission sets.
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - update
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - nodes/stats
+  verbs:
+  - get
+  - list
+  # We need create because kubelet takes a POST for the stat query
+  - create
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  - deployments
+  - replicasets
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extensions
+  resources:
+  - daemonsets
+  - deployments
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: signalfx-agent/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hopping-wolverine-signalfx-agent
+  labels:
+    app: signalfx-agent
+    heritage: Tiller
+    release: hopping-wolverine
+    chart: signalfx-agent-0.1.1
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hopping-wolverine-signalfx-agent
+subjects:
+- kind: ServiceAccount
+  name: hopping-wolverine-signalfx-agent
+  namespace: default

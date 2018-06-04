@@ -1,0 +1,29 @@
+
+---
+# Source: spartakus/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: spartakus
+    chart: spartakus-1.1.5
+    heritage: Tiller
+    release: falling-manta
+  name: falling-manta-spartakus
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spartakus
+        release: falling-manta
+    spec:
+      containers:
+        - name: spartakus
+          image: "k8s.gcr.io/spartakus-amd64:v1.0.0"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - volunteer
+            - --cluster-id="6495da36-edf8-460d-87ab-cea8ba1f07df"
+          resources:
+            {}

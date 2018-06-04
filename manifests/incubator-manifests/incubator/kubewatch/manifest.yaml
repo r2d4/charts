@@ -1,0 +1,68 @@
+
+---
+# Source: kubewatch/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: kubewatch
+    chart: "kubewatch-0.2.3"
+    heritage: "Tiller"
+    release: "peeking-echidna"
+  name: peeking-echidna-kubewatch-config
+data:
+  .kubewatch.yaml: |
+    handler:
+      slack:
+        channel: XXXX
+        token: XXXX
+        
+    resource:
+      daemonset: false
+      deployment: true
+      job: false
+      persistentvolume: false
+      pod: true
+      replicaset: false
+      replicationcontroller: false
+      services: false
+---
+# Source: kubewatch/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: kubewatch
+    chart: "kubewatch-0.2.3"
+    heritage: "Tiller"
+    release: "peeking-echidna"
+  name: peeking-echidna-kubewatch
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        checksum/config-map: 3feebb77c263142f29eb3237c7fe806c1286768777b2431261418b9a5b58247d
+      labels:
+        app: kubewatch
+        release: "peeking-echidna"
+    spec:
+      containers:
+      - name: kubewatch
+        image: tuna/kubewatch:v0.0.3
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: kubewatch-config-map
+          mountPath: /root
+        resources:
+          {}
+          
+      serviceAccountName: "default"
+      tolerations:
+        []
+        
+      restartPolicy: Always
+      volumes:
+      - name: kubewatch-config-map
+        configMap:
+          name: peeking-echidna-kubewatch-config

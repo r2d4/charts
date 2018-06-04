@@ -1,0 +1,131 @@
+
+---
+# Source: dex/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+  name: coiling-ragdoll-dex
+data:
+  config.yaml: Y29ubmVjdG9yczogbnVsbAplbmFibGVQYXNzd29yZERCOiB0cnVlCmlzc3VlcjogaHR0cHM6Ly9kZXgubWluaWt1YmUubG9jYWw6NTU1Ngpsb2dnZXI6CiAgbGV2ZWw6IGRlYnVnCm9hdXRoMjoKICBza2lwQXBwcm92YWxTY3JlZW46IHRydWUKc3RvcmFnZToKICBjb25maWc6CiAgICBpbkNsdXN0ZXI6IHRydWUKICB0eXBlOiBrdWJlcm5ldGVzCndlYjoKICBodHRwczogMC4wLjAuMDo1NTU2CiAgdGxzQ2VydDogL2V0Yy9kZXgvdGxzL3Rscy5jcnQKICB0bHNLZXk6IC9ldGMvZGV4L3Rscy90bHMua2V5Cg==
+---
+# Source: dex/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+  name: coiling-ragdoll-dex
+---
+# Source: dex/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+  name: coiling-ragdoll-dex
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: coiling-ragdoll-dex
+    namespace: default
+---
+# Source: dex/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: coiling-ragdoll-dex
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    release: coiling-ragdoll
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+  - port: 5556
+    targetPort: https
+  selector:
+    app: dex
+    release: "coiling-ragdoll"
+---
+# Source: dex/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: coiling-ragdoll-dex
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: dex
+      release: "coiling-ragdoll"
+  template:
+    metadata:
+      labels:
+        app: dex
+        release: "coiling-ragdoll"
+    spec:
+      serviceAccountName: coiling-ragdoll-dex
+      nodeSelector:
+          {}
+          
+      containers:
+      - name: main
+        image: "quay.io/coreos/dex:v2.10.0"
+        imagePullPolicy: IfNotPresent
+        command:
+        - /usr/local/bin/dex
+        - serve
+        - /etc/dex/cfg/config.yaml
+        resources:
+          null
+          
+        ports:
+        - name: https
+          containerPort: 5556
+          protocol: TCP
+        env:
+          []
+          
+        volumeMounts:
+        - mountPath: /etc/dex/cfg
+          name: config
+        - mountPath: /etc/dex/tls
+          name: tls
+      volumes:
+      - secret:
+          defaultMode: 420
+          items:
+          - key: config.yaml
+            path: config.yaml
+          secretName: coiling-ragdoll-dex
+        name: config
+      - name: tls
+        secret:
+          defaultMode: 420
+          secretName: "coiling-ragdoll-dex-tls"

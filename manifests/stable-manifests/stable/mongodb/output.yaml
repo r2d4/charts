@@ -1,0 +1,168 @@
+[debug] Created tunnel using local port: '44579'
+
+[debug] SERVER: "127.0.0.1:44579"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/mongodb
+
+NAME:   alternating-deer
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:26 2018
+CHART: mongodb-2.0.6
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  registry: docker.io
+  repository: bitnami/mongodb
+  tag: 3.6.5
+livenessProbe:
+  failureThreshold: 6
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 5
+mongodbExtraFlags: []
+nodeSelector: {}
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: true
+  size: 8Gi
+readinessProbe:
+  failureThreshold: 6
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 5
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+service:
+  type: ClusterIP
+usePassword: true
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: mongodb/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alternating-deer-mongodb
+  labels:
+    app: mongodb
+    chart: "mongodb-2.0.6"
+    release: "alternating-deer"
+    heritage: "Tiller"
+type: Opaque
+data:
+  mongodb-root-password: "OGYxVzhDb1FFdg=="
+---
+# Source: mongodb/templates/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: alternating-deer-mongodb
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "8Gi"
+---
+# Source: mongodb/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: alternating-deer-mongodb
+  labels:
+    app: mongodb
+    chart: "mongodb-2.0.6"
+    release: "alternating-deer"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - name: mongodb
+    port: 27017
+    targetPort: mongodb
+  selector:
+    app: mongodb
+    release: "alternating-deer"
+---
+# Source: mongodb/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: alternating-deer-mongodb
+  labels:
+    app: mongodb
+    chart: "mongodb-2.0.6"
+    release: "alternating-deer"
+    heritage: "Tiller"
+spec:
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        release: "alternating-deer"
+    spec:
+      containers:
+      - name: alternating-deer-mongodb
+        image: docker.io/bitnami/mongodb:3.6.5
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: MONGODB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: alternating-deer-mongodb
+              key: mongodb-root-password
+        - name: MONGODB_USERNAME
+          value: ""
+        - name: MONGODB_DATABASE
+          value: ""
+        - name: MONGODB_EXTRA_FLAGS
+          value: 
+        ports:
+        - name: mongodb
+          containerPort: 27017
+        livenessProbe:
+          exec:
+            command:
+            - mongo
+            - --eval
+            - "db.adminCommand('ping')"
+          failureThreshold: 6
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+          
+        readinessProbe:
+          exec:
+            command:
+            - mongo
+            - --eval
+            - "db.adminCommand('ping')"
+          failureThreshold: 6
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+          
+        volumeMounts:
+        - name: data
+          mountPath: /bitnami/mongodb
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: alternating-deer-mongodb

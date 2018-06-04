@@ -1,0 +1,270 @@
+
+---
+# Source: weave-scope/templates/test-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weave-scope-lazy-warthog-tests
+  labels:    
+    chart: weave-scope-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+data:
+  run.sh: |-
+
+    @test "Testing Weave Scope UI is accessible" {
+      curl --retry 12 --retry-delay 10 http://lazy-warthog-weave-scope.default.svc:80
+    }
+---
+# Source: weave-scope/charts/weave-scope-agent/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:    
+    chart: weave-scope-agent-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+    component: agent
+  name: weave-scope-agent-lazy-warthog
+  annotations:    
+    cloud.weave.works/launcher-info: |-
+      {
+        "server-version": "master-4fe8efe",
+        "original-request": {
+          "url": "/k8s/v1.7/scope.yaml"
+        },
+        "email-address": "support@weave.works",
+        "source-app": "weave-scope",
+        "weave-cloud-component": "scope"
+      }
+---
+# Source: weave-scope/charts/weave-scope-agent/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  labels:    
+    chart: weave-scope-agent-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+    component: agent
+  name: weave-scope-agent-lazy-warthog 
+  annotations:    
+    cloud.weave.works/launcher-info: |-
+      {
+        "server-version": "master-4fe8efe",
+        "original-request": {
+          "url": "/k8s/v1.7/scope.yaml"
+        },
+        "email-address": "support@weave.works",
+        "source-app": "weave-scope",
+        "weave-cloud-component": "scope"
+      }
+rules:
+  - apiGroups:
+      - '*'
+    resources:
+      - '*'
+    verbs:
+      - '*'
+  - nonResourceURLs:
+      - '*'
+    verbs:
+      - '*'
+---
+# Source: weave-scope/charts/weave-scope-agent/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:    
+    chart: weave-scope-agent-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+    component: agent
+  name: lazy-warthog-weave-scope
+  annotations:    
+    cloud.weave.works/launcher-info: |-
+      {
+        "server-version": "master-4fe8efe",
+        "original-request": {
+          "url": "/k8s/v1.7/scope.yaml"
+        },
+        "email-address": "support@weave.works",
+        "source-app": "weave-scope",
+        "weave-cloud-component": "scope"
+      }
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: weave-scope-agent-lazy-warthog
+subjects:
+  - kind: ServiceAccount
+    name: weave-scope-agent-lazy-warthog
+    namespace: default
+---
+# Source: weave-scope/charts/weave-scope-frontend/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:    
+    chart: weave-scope-frontend-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+    component: frontend
+  name: lazy-warthog-weave-scope
+  annotations:    
+    cloud.weave.works/launcher-info: |-
+      {
+        "server-version": "master-4fe8efe",
+        "original-request": {
+          "url": "/k8s/v1.7/scope.yaml"
+        },
+        "email-address": "support@weave.works",
+        "source-app": "weave-scope",
+        "weave-cloud-component": "scope"
+      }
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: weave-scope
+    release: lazy-warthog
+    component: frontend
+  type: ClusterIP
+---
+# Source: weave-scope/charts/weave-scope-agent/templates/daemonset.yaml
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:    
+    chart: weave-scope-agent-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+    component: agent
+  name: weave-scope-agent-lazy-warthog
+  annotations:    
+    cloud.weave.works/launcher-info: |-
+      {
+        "server-version": "master-4fe8efe",
+        "original-request": {
+          "url": "/k8s/v1.7/scope.yaml"
+        },
+        "email-address": "support@weave.works",
+        "source-app": "weave-scope",
+        "weave-cloud-component": "scope"
+      }
+spec:
+  selector:
+    matchLabels:
+      app: weave-scope
+      release: lazy-warthog
+      component: agent
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:        
+        chart: weave-scope-agent-0.9.2
+        heritage: Tiller
+        release: lazy-warthog
+        app: weave-scope
+        component: agent
+    spec:
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+      containers:
+        - name: weave-scope-agent
+          image: "weaveworks/scope:1.6.5"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - '--no-app'
+            - '--probe.docker.bridge=docker0'
+            - '--probe.docker=true'
+            - '--probe.kubernetes=true'
+            - lazy-warthog-weave-scope.default.svc:80
+          securityContext:
+            privileged: true
+          resources:
+            null
+            
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+            - name: scope-plugins
+              mountPath: /var/run/scope/plugins
+            - name: sys-kernel-debug
+              mountPath: /sys/kernel/debug
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+        - name: scope-plugins
+          hostPath:
+            path: /var/run/scope/plugins
+        - name: sys-kernel-debug
+          hostPath:
+            path: /sys/kernel/debug
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: weave-scope-agent-lazy-warthog
+---
+# Source: weave-scope/charts/weave-scope-frontend/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:    
+    chart: weave-scope-frontend-0.9.2
+    heritage: Tiller
+    release: lazy-warthog
+    app: weave-scope
+    component: frontend
+  name: weave-scope-frontend-lazy-warthog
+  annotations:    
+    cloud.weave.works/launcher-info: |-
+      {
+        "server-version": "master-4fe8efe",
+        "original-request": {
+          "url": "/k8s/v1.7/scope.yaml"
+        },
+        "email-address": "support@weave.works",
+        "source-app": "weave-scope",
+        "weave-cloud-component": "scope"
+      }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weave-scope
+      release: lazy-warthog
+      component: frontend
+  template:
+    metadata:
+      labels:        
+        chart: weave-scope-frontend-0.9.2
+        heritage: Tiller
+        release: lazy-warthog
+        app: weave-scope
+        component: frontend
+    spec:
+      containers:
+        - name: weave-scope-frontend
+          image: "weaveworks/scope:1.6.5"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - "--no-probe"
+          ports:
+            - name: http
+              containerPort: 4040
+              protocol: TCP
+          resources:
+            null

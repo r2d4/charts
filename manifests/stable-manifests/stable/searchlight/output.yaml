@@ -1,0 +1,184 @@
+[debug] Created tunnel using local port: '37791'
+
+[debug] SERVER: "127.0.0.1:37791"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/searchlight
+
+NAME:   pilfering-goat
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:33 2018
+CHART: searchlight-0.3.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+criticalAddon: false
+icinga:
+  image: appscode/icinga
+  tag: 5.0.0-k8s
+icinga2web:
+  password: changeit
+ido:
+  image: appscode/postgres
+  tag: 9.5-alpine
+imagePullPolicy: IfNotPresent
+logLevel: 3
+nodeSelector: {}
+notifier:
+  hipchat:
+    authToken: ""
+  mailgun:
+    apiKey: ""
+    domain: ""
+    from: ""
+    publicAPIKey: ""
+  plivo:
+    authId: ""
+    authToken: ""
+    from: ""
+  slack:
+    authToken: ""
+    channel: ""
+  smtp:
+    from: ""
+    host: ""
+    insecureSkipVerify: ""
+    password: ""
+    port: ""
+    username: ""
+  twilio:
+    accountSid: ""
+    authToken: ""
+    from: ""
+operator:
+  image: appscode/searchlight
+  tag: 5.0.0
+rbac:
+  create: false
+  serviceAccountName: default
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: searchlight/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: searchlight-pilfering-goat
+  labels:
+    app: "searchlight"
+    chart: "searchlight-0.3.3"
+    release: "pilfering-goat"
+    heritage: "Tiller"
+data:
+  ICINGA_WEB_UI_PASSWORD: "Y2hhbmdlaXQ="
+---
+# Source: searchlight/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: searchlight-pilfering-goat
+  labels:
+    app: "searchlight"
+    chart: "searchlight-0.3.3"
+    release: "pilfering-goat"
+    heritage: "Tiller"
+spec:
+  ports:
+  - name: ui
+    port: 80
+    targetPort: ui
+  - name: icinga
+    port: 5665
+    targetPort: icinga
+  - name: api
+    port: 8080
+    targetPort: api
+  - name: web
+    port: 56790
+    targetPort: web
+  selector:
+    app: "searchlight"
+    release: "pilfering-goat"
+---
+# Source: searchlight/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: searchlight-pilfering-goat
+  labels:
+    chart: "searchlight-0.3.3"
+    app: "searchlight"
+    heritage: "Tiller"
+    release: "pilfering-goat"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: "searchlight"
+        release: "pilfering-goat"
+    spec:
+      serviceAccountName: "default"
+      containers:
+      - name: operator
+        image: appscode/searchlight:5.0.0
+        imagePullPolicy: IfNotPresent
+        args:
+        - run
+        - --v=3
+        - --config-dir=/srv
+        - --config-secret-name=searchlight-pilfering-goat
+        - --api.address=:8080
+        - --web.address=:56790
+        ports:
+        - name: api
+          containerPort: 8080
+          protocol: TCP
+        - name: web
+          containerPort: 56790
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /srv
+      - name: icinga
+        image: appscode/icinga:5.0.0-k8s
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: icinga
+          containerPort: 5665
+          protocol: TCP
+        - name: ui
+          containerPort: 60006
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            port: 5665
+            path: /v1/status
+            httpHeaders:
+              - name: Authorization
+                value: "Basic c3RhdHVzdXNlcjpzdGF0dXNwYXNz"
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        volumeMounts:
+        - name: data
+          mountPath: /srv
+      - name: ido
+        image: appscode/postgres:9.5-alpine
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - name: ido
+          containerPort: 5432
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: data
+        emptyDir: {}

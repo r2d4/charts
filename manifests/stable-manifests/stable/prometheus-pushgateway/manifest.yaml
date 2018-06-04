@@ -1,0 +1,82 @@
+
+---
+# Source: prometheus-pushgateway/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jittery-orangutan-prometheus-pushgateway
+  labels:
+    app: prometheus-pushgateway
+    chart: prometheus-pushgateway-0.1.2    
+    release: "jittery-orangutan"
+    heritage: "Tiller"
+---
+# Source: prometheus-pushgateway/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jittery-orangutan-prometheus-pushgateway
+  labels:
+    app: prometheus-pushgateway
+    chart: prometheus-pushgateway-0.1.2
+    release: jittery-orangutan
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9091
+      targetPort: 9091
+      protocol: TCP
+      name: http
+  selector:
+    app: prometheus-pushgateway
+    release: jittery-orangutan
+---
+# Source: prometheus-pushgateway/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: jittery-orangutan-prometheus-pushgateway
+  labels:
+    app: prometheus-pushgateway
+    chart: prometheus-pushgateway-0.1.2
+    release: jittery-orangutan
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-pushgateway
+      release: jittery-orangutan
+  template:
+    metadata:
+      labels:
+        app: prometheus-pushgateway
+        release: jittery-orangutan
+      annotations:
+        {}
+                
+    spec:
+      serviceAccountName: jittery-orangutan-prometheus-pushgateway
+      containers:
+        - name: pushgateway
+          image: "prom/pushgateway:v0.4.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9091
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /#/status
+              port: 9091
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /#/status
+              port: 9091
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          resources:
+            {}

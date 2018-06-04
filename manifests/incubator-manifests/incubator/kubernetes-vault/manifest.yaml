@@ -1,0 +1,90 @@
+
+---
+# Source: kubernetes-vault/templates/configMap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trendy-kudu-kubernetes-vault
+  labels:
+    app: trendy-kudu-kubernetes-vault
+    chart: kubernetes-vault-0.1.0
+    heritage: Tiller
+    release: trendy-kudu
+data:
+  kubernetes-vault.yml: |
+    # Dummy comment: https://github.com/kubernetes/helm/blob/master/docs/chart_template_guide/yaml_techniques.md#strings-in-yaml
+    vault:
+      addr: http://vault:8200
+      token: change-this-value
+
+    kubernetes:
+      watchNamespace: ${KUBERNETES_NAMESPACE}
+      serviceNamespace: ${KUBERNETES_NAMESPACE}
+      service: trendy-kudu-kubernetes-vault
+
+    prometheus:
+      tls:
+        vaultCertBackend: intermediate-ca
+        vaultCertRole: kubernetes-vault
+---
+# Source: kubernetes-vault/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: trendy-kudu-kubernetes-vault
+  labels:
+    app: kubernetes-vault
+    chart: kubernetes-vault-0.1.0
+    release: trendy-kudu
+    heritage: Tiller
+spec:
+  clusterIP: None
+  ports:
+    - name: port 
+      port: 80
+  selector:
+    run: trendy-kudu-kubernetes-vault
+    app: kubernetes-vault
+    release: trendy-kudu
+---
+# Source: kubernetes-vault/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: trendy-kudu-kubernetes-vault
+  labels:
+    app: kubernetes-vault
+    chart: kubernetes-vault-0.1.0
+    release: trendy-kudu
+    heritage: Tiller
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: kubernetes-vault
+        release: trendy-kudu
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: trendy-kudu-kubernetes-vault
+      containers:
+        - name: kubernetes-vault
+          image: "boostport/kubernetes-vault:v0.4.8"
+          imagePullPolicy: Always
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+          - name: config-volume
+            mountPath: /kubernetes-vault
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi

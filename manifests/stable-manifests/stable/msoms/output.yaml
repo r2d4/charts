@@ -1,0 +1,54 @@
+[debug] Created tunnel using local port: '38085'
+
+[debug] SERVER: "127.0.0.1:38085"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/msoms
+
+NAME:   braided-grizzly
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:26 2018
+CHART: msoms-0.2.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+nodeSelector:
+  beta.kubernetes.io/os: linux
+omsagent:
+  domain: opinsights.azure.com
+  image:
+    dockerProviderVersion: 1.0.0-30
+    pullPolicy: IfNotPresent
+    tag: 1.4.3-174
+  secret:
+    key: <your_workspace_key>
+    wsid: <your_workspace_id>
+resources:
+  limits:
+    cpu: 500m
+    memory: 768Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: msoms/templates/omsagent-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: braided-grizzly-msoms
+  labels:
+    app: msoms
+    chart: msoms-0.2.0
+    release: braided-grizzly
+    heritage: Tiller
+type: Opaque
+data:
+  WSID: "PHlvdXJfd29ya3NwYWNlX2lkPg=="
+  KEY: "PHlvdXJfd29ya3NwYWNlX2tleT4="
+  DOMAIN: "b3BpbnNpZ2h0cy5henVyZS5jb20="

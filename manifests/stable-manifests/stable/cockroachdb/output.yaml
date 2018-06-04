@@ -1,0 +1,272 @@
+[debug] Created tunnel using local port: '43461'
+
+[debug] SERVER: "127.0.0.1:43461"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/cockroachdb
+
+NAME:   washing-gerbil
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:15 2018
+CHART: cockroachdb-1.1.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+CacheSize: 25%
+ClusterDomain: cluster.local
+Component: cockroachdb
+GrpcPort: 26257
+HttpPort: 8080
+Image: cockroachdb/cockroach
+ImagePullPolicy: Always
+ImageTag: v2.0.0
+MaxSQLMemory: 25%
+MaxUnavailable: 1
+Name: cockroachdb
+NetworkPolicy:
+  AllowExternal: true
+  Enabled: false
+PodManagementPolicy: Parallel
+Replicas: 3
+Resources: {}
+Secure:
+  Enabled: false
+  RequestCertsImage: cockroachdb/cockroach-k8s-request-cert
+  RequestCertsImageTag: "0.3"
+  ServiceAccount:
+    Create: true
+    Name: null
+Service:
+  type: ClusterIP
+Storage: 1Gi
+StorageClass: null
+UpdateStrategy:
+  type: RollingUpdate
+
+HOOKS:
+---
+# washing-gerbil-cockroachdb-test
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "washing-gerbil-cockroachdb-test"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+  - name: "client-test"
+    image: "cockroachdb/cockroach:v2.0.0"
+    imagePullPolicy: "Always"
+    command:
+      - "/cockroach/cockroach"
+      - "sql"
+      - "--insecure"
+      - "--host"
+      - "washing-gerbil-cockroachdb-public.default"
+      - "--port"
+      - "26257"
+      - "-e"
+      - "SHOW DATABASES;"
+  restartPolicy: Never
+---
+# washing-gerbil-cockroachdb-init
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "washing-gerbil-cockroachdb-init"
+  labels:
+    heritage: "Tiller"
+    release: "washing-gerbil"
+    chart: "cockroachdb-1.1.1"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: cluster-init
+        image: "cockroachdb/cockroach:v2.0.0"
+        imagePullPolicy: "Always"
+        command:
+          - "/cockroach/cockroach"
+          - "init"
+          - "--insecure"
+          - "--host=washing-gerbil-cockroachdb-0.washing-gerbil-cockroachdb"
+      restartPolicy: OnFailure
+MANIFEST:
+
+---
+# Source: cockroachdb/templates/cockroachdb-statefulset.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  # This service is meant to be used by clients of the database. It exposes a ClusterIP that will
+  # automatically load balance connections to the different database pods.
+  name: "washing-gerbil-cockroachdb-public"
+  labels:
+    heritage: "Tiller"
+    release: "washing-gerbil"
+    chart: "cockroachdb-1.1.1"
+    component: "washing-gerbil-cockroachdb"
+spec:
+  type: ClusterIP
+  ports:
+  # The main port, served by gRPC, serves Postgres-flavor SQL, internode
+  # traffic and the cli.
+  - port: 26257
+    targetPort: 26257
+    name: grpc
+  # The secondary port serves the UI as well as health and debug endpoints.
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    component: "washing-gerbil-cockroachdb"
+---
+# Source: cockroachdb/templates/cockroachdb-statefulset.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  # This service only exists to create DNS entries for each pod in the stateful
+  # set such that they can resolve each other's IP addresses. It does not
+  # create a load-balanced ClusterIP and should not be used directly by clients
+  # in most circumstances.
+  name: "washing-gerbil-cockroachdb"
+  labels:
+    heritage: "Tiller"
+    release: "washing-gerbil"
+    chart: "cockroachdb-1.1.1"
+    component: "washing-gerbil-cockroachdb"
+  annotations:
+    # Use this annotation in addition to the actual field below because the
+    # annotation will stop being respected soon but the field is broken in
+    # some versions of Kubernetes:
+    # https://github.com/kubernetes/kubernetes/issues/58662
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    # Enable automatic monitoring of all instances when Prometheus is running in the cluster.
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "_status/vars"
+    prometheus.io/port: "8080"
+spec:
+  ports:
+  - port: 26257
+    targetPort: 26257
+    name: grpc
+  - port: 8080
+    targetPort: 8080
+    name: http
+  # We want all pods in the StatefulSet to have their addresses published for
+  # the sake of the other CockroachDB pods even before they're ready, since they
+  # have to be able to talk to each other in order to become ready.
+  publishNotReadyAddresses: true
+  clusterIP: None
+  selector:
+    component: "washing-gerbil-cockroachdb"
+---
+# Source: cockroachdb/templates/cockroachdb-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: "washing-gerbil-cockroachdb"
+spec:
+  serviceName: "washing-gerbil-cockroachdb"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "washing-gerbil"
+        chart: "cockroachdb-1.1.1"
+        component: "washing-gerbil-cockroachdb"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                  - "washing-gerbil-cockroachdb"
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: "washing-gerbil-cockroachdb"
+        image: "cockroachdb/cockroach:v2.0.0"
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 26257
+          name: grpc
+        - containerPort: 8080
+          name: http
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: "/health?ready=1"
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 2
+        resources:
+          {}
+          
+        env:
+        - name: STATEFULSET_NAME
+          value: "washing-gerbil-cockroachdb"
+        - name: COCKROACH_CHANNEL
+          value: kubernetes-helm
+        volumeMounts:
+        - name: datadir
+          mountPath: /cockroach/cockroach-data
+        command:
+          - "/bin/bash"
+          - "-ecx"
+            # The use of qualified `hostname -f` is crucial:
+            # Other nodes aren't able to look up the unqualified hostname.
+          - "exec /cockroach/cockroach start --logtostderr --insecure --advertise-host $(hostname -f) --http-host 0.0.0.0 --cache 25% --max-sql-memory 25% --join ${STATEFULSET_NAME}-0.${STATEFULSET_NAME},${STATEFULSET_NAME}-1.${STATEFULSET_NAME},${STATEFULSET_NAME}-2.${STATEFULSET_NAME}"
+      # No pre-stop hook is required, a SIGTERM plus some time is all that's
+      # needed for graceful shutdown of a node.
+      terminationGracePeriodSeconds: 60
+      volumes:
+      - name: datadir
+        persistentVolumeClaim:
+          claimName: datadir
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+    
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "1Gi"
+---
+# Source: cockroachdb/templates/cockroachdb-statefulset.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: "washing-gerbil-cockroachdb-budget"
+  labels:
+    heritage: "Tiller"
+    release: "washing-gerbil"
+    chart: "cockroachdb-1.1.1"
+    component: "washing-gerbil-cockroachdb"
+spec:
+  selector:
+    matchLabels:
+      component: "washing-gerbil-cockroachdb"
+  maxUnavailable: 1

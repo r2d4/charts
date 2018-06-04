@@ -1,0 +1,415 @@
+[debug] Created tunnel using local port: '46271'
+
+[debug] SERVER: "127.0.0.1:46271"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/etcd-operator
+
+NAME:   gangly-clownfish
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:17 2018
+CHART: etcd-operator-0.7.7
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+backupOperator:
+  commandArgs: {}
+  image:
+    pullPolicy: Always
+    repository: quay.io/coreos/etcd-operator
+    tag: v0.7.0
+  name: etcd-backup-operator
+  nodeSelector: {}
+  replicaCount: 1
+  resources:
+    cpu: 100m
+    memory: 128Mi
+  spec:
+    s3:
+      awsSecret: null
+      s3Bucket: null
+    storageType: S3
+customResources:
+  createBackupCRD: false
+  createEtcdClusterCRD: false
+  createRestoreCRD: false
+deployments:
+  backupOperator: true
+  etcdOperator: true
+  restoreOperator: true
+etcdCluster:
+  enableTLS: false
+  image:
+    pullPolicy: Always
+    repository: quay.io/coreos/etcd
+    tag: v3.2.10
+  name: etcd-cluster
+  pod:
+    antiAffinity: false
+    nodeSelector: {}
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  size: 3
+  tls:
+    static:
+      member:
+        peerSecret: etcd-peer-tls
+        serverSecret: etcd-server-tls
+      operatorSecret: etcd-client-tls
+  version: 3.2.10
+etcdOperator:
+  commandArgs: {}
+  image:
+    pullPolicy: Always
+    repository: quay.io/coreos/etcd-operator
+    tag: v0.7.0
+  livenessProbe:
+    enabled: false
+    failureThreshold: 3
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  name: etcd-operator
+  nodeSelector: {}
+  readinessProbe:
+    enabled: false
+    failureThreshold: 3
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  replicaCount: 1
+  resources:
+    cpu: 100m
+    memory: 128Mi
+rbac:
+  apiVersion: v1beta1
+  create: true
+restoreOperator:
+  commandArgs: {}
+  image:
+    pullPolicy: Always
+    repository: quay.io/coreos/etcd-operator
+    tag: v0.7.0
+  name: etcd-restore-operator
+  nodeSelector: {}
+  port: 19999
+  replicaCount: 1
+  resources:
+    cpu: 100m
+    memory: 128Mi
+  spec:
+    s3:
+      awsSecret: null
+      path: null
+serviceAccount:
+  backupOperatorServiceAccount:
+    create: true
+    name: null
+  etcdOperatorServiceAccount:
+    create: true
+    name: null
+  restoreOperatorServiceAccount:
+    create: true
+    name: null
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: etcd-operator/templates/backup-operator-service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-backup-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-backup-operator
+    heritage: Tiller
+    release: gangly-clownfish
+---
+# Source: etcd-operator/templates/operator-service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-operator
+    heritage: Tiller
+    release: gangly-clownfish
+---
+# Source: etcd-operator/templates/restore-operator-service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-restore-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-restore-operator
+    heritage: Tiller
+    release: gangly-clownfish
+---
+# Source: etcd-operator/templates/operator-cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-operator
+    heritage: Tiller
+    release: gangly-clownfish
+rules:
+- apiGroups:
+  - etcd.database.coreos.com
+  resources:
+  - etcdclusters
+  - etcdbackups
+  - etcdrestores
+  verbs:
+  - "*"
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  verbs:
+  - "*"
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+---
+# Source: etcd-operator/templates/backup-operator-clusterrole-binding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-backup-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-operator
+    heritage: Tiller
+    release: gangly-clownfish
+subjects:
+- kind: ServiceAccount
+  name: gangly-clownfish-etcd-operator-etcd-backup-operator
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gangly-clownfish-etcd-operator-etcd-operator
+---
+# Source: etcd-operator/templates/operator-clusterrole-binding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-operator
+    heritage: Tiller
+    release: gangly-clownfish
+subjects:
+- kind: ServiceAccount
+  name: gangly-clownfish-etcd-operator-etcd-operator
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gangly-clownfish-etcd-operator-etcd-operator
+---
+# Source: etcd-operator/templates/restore-operator-clusterrole-binding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-restore-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-restore-operator
+    heritage: Tiller
+    release: gangly-clownfish
+subjects:
+- kind: ServiceAccount
+  name: gangly-clownfish-etcd-operator-etcd-restore-operator
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gangly-clownfish-etcd-operator-etcd-operator
+---
+# Source: etcd-operator/templates/restore-operator-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd-restore-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-restore-operator
+    heritage: Tiller
+    release: gangly-clownfish
+spec:
+  ports:
+  - protocol: TCP
+    name: http-etcd-restore-port
+    port: 19999
+  selector:
+    app: etcd-restore-operator
+    release: gangly-clownfish
+---
+# Source: etcd-operator/templates/backup-operator-deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-backup-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-backup-operator
+    heritage: Tiller
+    release: gangly-clownfish
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: gangly-clownfish-etcd-operator-etcd-backup-operator
+      labels:
+        app: gangly-clownfish-etcd-operator-etcd-backup-operator
+        release: gangly-clownfish
+    spec:
+      serviceAccountName: gangly-clownfish-etcd-operator-etcd-backup-operator
+      containers:
+      - name: etcd-backup-operator
+        image: "quay.io/coreos/etcd-operator:v0.7.0"
+        imagePullPolicy: Always
+        command:
+        - etcd-backup-operator
+        env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+# Source: etcd-operator/templates/operator-deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-operator
+    heritage: Tiller
+    release: gangly-clownfish
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: gangly-clownfish-etcd-operator-etcd-operator
+      labels:
+        app: gangly-clownfish-etcd-operator-etcd-operator
+        release: gangly-clownfish
+    spec:
+      serviceAccountName: gangly-clownfish-etcd-operator-etcd-operator
+      containers:
+      - name: gangly-clownfish-etcd-operator-etcd-operator
+        image: "quay.io/coreos/etcd-operator:v0.7.0"
+        imagePullPolicy: Always
+        command:
+        - etcd-operator
+        env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+# Source: etcd-operator/templates/restore-operator-deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: gangly-clownfish-etcd-operator-etcd-restore-operator
+  labels:
+    chart: "etcd-operator-0.7.7"
+    app: etcd-restore-operator
+    heritage: Tiller
+    release: gangly-clownfish
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: gangly-clownfish-etcd-operator-etcd-restore-operator
+      labels:
+        app: etcd-restore-operator
+        release: gangly-clownfish
+    spec:
+      serviceAccountName: gangly-clownfish-etcd-operator-etcd-restore-operator
+      containers:
+      - name: etcd-restore-operator
+        image: "quay.io/coreos/etcd-operator:v0.7.0"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 19999
+        command:
+        - etcd-restore-operator
+        env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SERVICE_ADDR
+          value: "etcd-restore-operator:19999"
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi

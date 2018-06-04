@@ -1,0 +1,67 @@
+
+---
+# Source: tensorflow-inception/templates/tensorflow-inception.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: morbid-zorse-tensorflow
+  labels:
+    heritage: "Tiller"
+    release: "morbid-zorse"
+    chart: "tensorflow-inception-0.3.0"
+    component: "morbid-zorse-tensorflow-inception"
+  annotations:
+    "helm.sh/created": "1527976741"
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    component: "morbid-zorse-tensorflow-inception"
+  type: LoadBalancer
+---
+# Source: tensorflow-inception/templates/tensorflow-inception.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: morbid-zorse-tensorflow
+  labels:
+    heritage: "Tiller"
+    release: "morbid-zorse"
+    chart: "tensorflow-inception-0.3.0"
+    component: "morbid-zorse-tensorflow-inception"
+  annotations:
+    "helm.sh/created": "1527976741"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "morbid-zorse-tensorflow-inception"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "morbid-zorse"
+        chart: "tensorflow-inception-0.3.0"
+        component: "morbid-zorse-tensorflow-inception"
+    spec:
+      containers:
+        - name: morbid-zorse-tensorflow
+          image: "quay.io/lachie83/inception_serving:latest"
+          imagePullPolicy: "IfNotPresent"
+          command:
+          - "/bin/sh"
+          - "-c"
+          args:
+          - "/serving/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server --port=9090 --model_name=inception --model_base_path=/serving/inception-export"
+          ports:
+            - containerPort: 9090
+          readinessProbe:
+            tcpSocket:
+              port: 9090
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+          resources:
+            {}

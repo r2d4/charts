@@ -1,0 +1,54 @@
+
+---
+# Source: kube-ops-view/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: deadly-pika-kube-ops-view
+  labels:
+    chart: "kube-ops-view-0.4.2"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: deadly-pika-kube-ops-view
+---
+# Source: kube-ops-view/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: deadly-pika-kube-ops-view
+  labels:
+    chart: "kube-ops-view-0.4.2"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: deadly-pika-kube-ops-view
+    spec:
+      serviceAccountName: "default"
+      containers:
+      - name: kube-ops-view
+        image: "hjacobs/kube-ops-view:latest"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 80m
+              memory: 64Mi

@@ -1,0 +1,20 @@
+
+---
+# Source: kapacitor/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ignorant-cricket-kapacitor
+  labels:
+    chart: "kapacitor-0.5.1"
+    release: "ignorant-cricket"
+    heritage: "Tiller"
+    app: ignorant-cricket-kapacitor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9092
+    targetPort: 9092
+    name: api
+  selector:
+    app: ignorant-cricket-kapacitor

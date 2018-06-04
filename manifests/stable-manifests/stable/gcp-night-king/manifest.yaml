@@ -1,0 +1,14 @@
+
+---
+# Source: gcp-night-king/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knotted-koala-gcp-night-king-config
+  labels:
+    app: gcp-night-king
+    chart: gcp-night-king-1.0.2
+    heritage: Tiller
+    release: knotted-koala
+data:
+  project.id: "MUST PROVIDE PROJECT ID"

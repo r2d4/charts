@@ -1,0 +1,57 @@
+[debug] Created tunnel using local port: '43879'
+
+[debug] SERVER: "127.0.0.1:43879"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/acs-engine-autoscaler
+
+NAME:   dapper-horse
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:13 2018
+CHART: acs-engine-autoscaler-2.2.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+acsenginecluster:
+  azurespappid: null
+  azurespsecret: null
+  azuresptenantid: null
+  caprivatekey: null
+  clientprivatekey: null
+  kubeconfigprivatekey: null
+  resourcegroup: null
+affinity: {}
+deploymentAnnotations: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: wbuchwalter/kubernetes-acs-engine-autoscaler
+  tag: 2.1.1
+nodeSelector: {}
+podAnnotations: {}
+replicaCount: 1
+resources: {}
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: acs-engine-autoscaler/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dapper-horse-acs-engine-autoscaler
+  labels:
+    app: acs-engine-autoscaler
+    heritage: "Tiller"
+    release: "dapper-horse"
+    chart: acs-engine-autoscaler-2.2.0
+type: Opaque
+data:
+  azure-sp-app-id: "TUlTU0lORw=="
+  azure-sp-secret: "TUlTU0lORw=="
+  azure-sp-tenant-id: "TUlTU0lORw=="
+  kubeconfig-private-key: "TUlTU0lORw=="
+  client-private-key: "TUlTU0lORw=="
+  ca-private-key: "TUlTU0lORw=="

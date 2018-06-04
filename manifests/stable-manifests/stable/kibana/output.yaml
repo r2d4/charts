@@ -1,0 +1,100 @@
+[debug] Created tunnel using local port: '44301'
+
+[debug] SERVER: "127.0.0.1:44301"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/kibana
+
+NAME:   yummy-crab
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:22 2018
+CHART: kibana-0.6.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+commandline:
+  args: null
+env: null
+image:
+  pullPolicy: IfNotPresent
+  repository: docker.elastic.co/kibana/kibana-oss
+  tag: 6.0.0
+ingress:
+  enabled: false
+nodeSelector: {}
+podAnnotations: {}
+replicaCount: 1
+resources: {}
+service:
+  annotations: null
+  externalPort: 443
+  internalPort: 5601
+  type: ClusterIP
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: kibana/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kibana
+    chart: kibana-0.6.0
+    release: yummy-crab
+    heritage: Tiller
+  name: yummy-crab-kibana
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 443
+      targetPort: 5601
+      protocol: TCP
+  selector:
+    app: kibana
+    release: yummy-crab
+---
+# Source: kibana/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: kibana
+    chart: "kibana-0.6.0"
+    heritage: Tiller
+    release: yummy-crab
+  name: yummy-crab-kibana
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kibana
+        release: "yummy-crab"
+    spec:
+      containers:
+      - name: kibana
+        image: "docker.elastic.co/kibana/kibana-oss:6.0.0"
+        imagePullPolicy: IfNotPresent
+        env:
+        ports:
+        - containerPort: 5601
+          name: kibana
+          protocol: TCP
+        # livenessProbe:
+        #   httpGet:
+        #     path: /ping
+        #     port: 5601
+        # readinessProbe:
+        #   httpGet:
+        #     path: /ping
+        #     port: 5601
+        resources:
+          {}
+          
+      tolerations:
+        []

@@ -1,0 +1,198 @@
+[debug] Created tunnel using local port: '35691'
+
+[debug] SERVER: "127.0.0.1:35691"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/k8s-spot-rescheduler
+
+NAME:   mean-duck
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:21 2018
+CHART: k8s-spot-rescheduler-0.1.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+cmdOptions:
+  housekeeping-interval: 10s
+  listen-address: 0.0.0.0:9235
+  max-graceful-termination: 2m
+  node-drain-delay: 10m
+  on-demand-node-label: node-role.kubernetes.io/worker
+  pod-eviction-timeout: 2m
+  running-in-cluster: true
+  spot-node-label: node-role.kubernetes.io/spot-worker
+  v: 2
+image:
+  pullPolicy: IfNotPresent
+  repository: quay.io/pusher/k8s-spot-rescheduler
+  tag: v0.1.1
+rbac:
+  create: true
+replicaCount: 1
+resources: {}
+serviceAccount:
+  create: true
+  name: null
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: k8s-spot-rescheduler/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mean-duck-k8s-spot-rescheduler
+  labels:
+    app: k8s-spot-rescheduler
+    chart: k8s-spot-rescheduler-0.1.2
+    release: mean-duck
+    heritage: Tiller
+---
+# Source: k8s-spot-rescheduler/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mean-duck-k8s-spot-rescheduler
+  labels:
+    app: k8s-spot-rescheduler
+    chart: k8s-spot-rescheduler-0.1.2
+    release: mean-duck
+    heritage: Tiller
+rules:
+  # For leader election
+  - apiGroups:
+      - ""
+    resources:
+      - endpoints
+    verbs:
+      - get
+      - update
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+
+  # For listing and watching items
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+      - pods
+      - replicasets
+      - replicationcontrollers
+      - services
+      - statefulsets
+      - poddisruptionbudgets
+      - persistentvolumes
+      - persistentvolumeclaims
+    verbs:
+      - list
+      - get
+      - watch
+  - apiGroups:
+    - apps
+    resources:
+       - statefulsets
+    verbs:
+      - list
+      - get
+      - watch
+  - apiGroups:
+    - extensions
+    resources:
+       - replicasets
+    verbs:
+      - list
+      - get
+      - watch
+  - apiGroups:
+    - policy
+    resources:
+       - poddisruptionbudgets
+    verbs:
+      - list
+      - get
+      - watch
+
+  # For rescheduling pods
+  - apiGroups:
+    - ""
+    resources:
+       - nodes
+    verbs:
+      - update
+  - apiGroups:
+    - ""
+    resources:
+       - pods/eviction
+    verbs:
+      - create
+---
+# Source: k8s-spot-rescheduler/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mean-duck-k8s-spot-rescheduler
+  labels:
+    app: k8s-spot-rescheduler
+    chart: k8s-spot-rescheduler-0.1.2
+    release: mean-duck
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mean-duck-k8s-spot-rescheduler
+subjects:
+- kind: ServiceAccount
+  name: mean-duck-k8s-spot-rescheduler
+  namespace: default
+---
+# Source: k8s-spot-rescheduler/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: mean-duck-k8s-spot-rescheduler
+  labels:
+    app: k8s-spot-rescheduler
+    chart: k8s-spot-rescheduler-0.1.2
+    release: mean-duck
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-spot-rescheduler
+      release: mean-duck
+  template:
+    metadata:
+      labels:
+        app: k8s-spot-rescheduler
+        release: mean-duck
+    spec:
+      serviceAccountName: mean-duck-k8s-spot-rescheduler
+      containers:
+        - name: k8s-spot-rescheduler
+          image: "quay.io/pusher/k8s-spot-rescheduler:v0.1.1"
+          imagePullPolicy: IfNotPresent
+          command:
+            - rescheduler
+            - --namespace=default
+            - --housekeeping-interval=10s
+            - --listen-address=0.0.0.0:9235
+            - --max-graceful-termination=2m
+            - --node-drain-delay=10m
+            - --on-demand-node-label=node-role.kubernetes.io/worker
+            - --pod-eviction-timeout=2m
+            - --running-in-cluster=true
+            - --spot-node-label=node-role.kubernetes.io/spot-worker
+            - --v=2
+          ports:
+          - name: http
+            containerPort: 9235
+          resources:
+            {}

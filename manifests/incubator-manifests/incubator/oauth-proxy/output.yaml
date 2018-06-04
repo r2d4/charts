@@ -1,0 +1,138 @@
+[debug] Created tunnel using local port: '34085'
+
+[debug] SERVER: "127.0.0.1:34085"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/oauth-proxy
+
+NAME:   calling-cat
+REVISION: 1
+RELEASED: Sat Jun  2 14:59:00 2018
+CHART: oauth-proxy-0.1.8
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+config:
+  clientID: XXXXXXX
+  clientSecret: XXXXXXXX
+  cookieSecret: XXXXXXXXXX
+extraArgs:
+  email-domain: '*'
+  http-address: 0.0.0.0:4180
+  upstream: file:///dev/null
+image:
+  pullPolicy: IfNotPresent
+  repository: a5huynh/oauth2_proxy
+  tag: "2.2"
+ingress:
+  enabled: false
+  path: /
+nodeSelector: {}
+podAnnotations: {}
+podLabels: {}
+replicaCount: 1
+resources: {}
+service:
+  externalPort: 443
+  internalPort: 4180
+  type: ClusterIP
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: oauth-proxy/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: oauth-proxy
+    chart: "oauth-proxy-0.1.8"
+    heritage: Tiller
+    release: calling-cat
+  name: calling-cat-oauth-proxy
+type: Opaque
+data:
+  cookie-secret: "WFhYWFhYWFhYWA=="
+  client-secret: "WFhYWFhYWFg="
+  client-id: "WFhYWFhYWA=="
+---
+# Source: oauth-proxy/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: oauth-proxy
+    chart: oauth-proxy-0.1.8
+    release: calling-cat
+    heritage: Tiller
+  name: calling-cat-oauth-proxy
+spec:
+  type: ClusterIP
+  ports:
+    - port: 443
+      targetPort: 4180
+      protocol: TCP
+  selector:
+    app: oauth-proxy
+    release: calling-cat
+---
+# Source: oauth-proxy/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: oauth-proxy
+    chart: "oauth-proxy-0.1.8"
+    heritage: Tiller
+    release: calling-cat
+  name: calling-cat-oauth-proxy
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: oauth-proxy
+        release: "calling-cat"
+    spec:
+      containers:
+      - name: oauth-proxy
+        image: "a5huynh/oauth2_proxy:2.2"
+        imagePullPolicy: IfNotPresent
+        args:
+          - --email-domain=*
+          - --http-address=0.0.0.0:4180
+          - --upstream=file:///dev/null
+        env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name:  calling-cat-oauth-proxy
+              key: client-id
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name:  calling-cat-oauth-proxy
+              key: client-secret
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name:  calling-cat-oauth-proxy
+              key: cookie-secret
+        ports:
+          - containerPort: 4180
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 4180
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 4180
+        resources:
+          {}
+          
+      tolerations:
+        []

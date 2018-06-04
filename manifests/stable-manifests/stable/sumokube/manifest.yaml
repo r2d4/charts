@@ -1,0 +1,12 @@
+
+---
+# Source: sumokube/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lumpy-alligator-sumokube
+  labels:
+    app: lumpy-alligator-sumokube
+    chart: "sumokube-0.1.4"
+    release: "lumpy-alligator"
+    heritage: "Tiller"

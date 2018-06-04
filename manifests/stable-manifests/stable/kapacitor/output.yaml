@@ -1,0 +1,55 @@
+[debug] Created tunnel using local port: '34523'
+
+[debug] SERVER: "127.0.0.1:34523"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/kapacitor
+
+NAME:   ignorant-cricket
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:21 2018
+CHART: kapacitor-0.5.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: kapacitor
+  tag: 1.4-alpine
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: false
+  size: 8Gi
+resources:
+  limits:
+    cpu: 2
+    memory: 2Gi
+  requests:
+    cpu: 0.1
+    memory: 256Mi
+service:
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: kapacitor/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ignorant-cricket-kapacitor
+  labels:
+    chart: "kapacitor-0.5.1"
+    release: "ignorant-cricket"
+    heritage: "Tiller"
+    app: ignorant-cricket-kapacitor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9092
+    targetPort: 9092
+    name: api
+  selector:
+    app: ignorant-cricket-kapacitor

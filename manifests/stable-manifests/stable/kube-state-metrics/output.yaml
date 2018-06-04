@@ -1,0 +1,163 @@
+[debug] Created tunnel using local port: '37759'
+
+[debug] SERVER: "127.0.0.1:37759"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/kube-state-metrics
+
+NAME:   rude-kangaroo
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:23 2018
+CHART: kube-state-metrics-0.7.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+collectors:
+  cronjobs: true
+  daemonsets: true
+  deployments: true
+  endpoints: true
+  horizontalpodautoscalers: true
+  jobs: true
+  limitranges: true
+  namespaces: true
+  nodes: true
+  persistentvolumeclaims: true
+  persistentvolumes: true
+  pods: true
+  replicasets: true
+  replicationcontrollers: true
+  resourcequotas: true
+  services: true
+  statefulsets: true
+image:
+  pullPolicy: IfNotPresent
+  repository: k8s.gcr.io/kube-state-metrics
+  tag: v1.2.0
+nodeSelector: {}
+podAnnotations: {}
+prometheusScrape: true
+rbac:
+  create: false
+  serviceAccountName: default
+service:
+  loadBalancerIP: ""
+  nodePort: 0
+  port: 8080
+  type: ClusterIP
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: kube-state-metrics/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rude-kangaroo-kube-state-metrics
+  labels:
+    app: kube-state-metrics
+    chart: "kube-state-metrics-0.7.1"
+    release: "rude-kangaroo"
+    heritage: "Tiller"
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  type: "ClusterIP"
+  ports:
+  - name: "http"
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: kube-state-metrics
+    release: rude-kangaroo
+---
+# Source: kube-state-metrics/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rude-kangaroo-kube-state-metrics
+  labels:
+    app: kube-state-metrics
+    chart: "kube-state-metrics-0.7.1"
+    release: "rude-kangaroo"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kube-state-metrics
+        release: "rude-kangaroo"
+    spec:
+      serviceAccountName: "default"
+      containers:
+      - name: kube-state-metrics
+        args:
+
+        - --collectors=cronjobs
+
+
+        - --collectors=daemonsets
+
+
+        - --collectors=deployments
+
+
+        - --collectors=endpoints
+
+
+        - --collectors=horizontalpodautoscalers
+
+
+        - --collectors=jobs
+
+
+        - --collectors=limitranges
+
+
+        - --collectors=namespaces
+
+
+        - --collectors=nodes
+
+
+        - --collectors=persistentvolumeclaims
+
+
+        - --collectors=persistentvolumes
+
+
+        - --collectors=pods
+
+
+        - --collectors=replicasets
+
+
+        - --collectors=replicationcontrollers
+
+
+        - --collectors=resourcequotas
+
+
+        - --collectors=services
+
+
+        - --collectors=statefulsets
+
+
+        imagePullPolicy: IfNotPresent
+        image: "k8s.gcr.io/kube-state-metrics:v1.2.0"
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+            null

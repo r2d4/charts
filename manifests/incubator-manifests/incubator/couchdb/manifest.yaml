@@ -1,0 +1,172 @@
+
+---
+# Source: couchdb/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: reeling-buffalo-couchdb
+  labels:
+    app: reeling-buffalo-couchdb
+    chart: "couchdb-0.1.6"
+    release: "reeling-buffalo"
+    heritage: "Tiller"
+type: Opaque
+data:
+  adminUsername: "YWRtaW4="
+  adminPassword: "SVJTdlhYZ29yMHB2YkJDSkVaeG8="
+  cookieAuthSecret: "ZEpyRzlDSHJGSG5Pd3FyNWVLM3g="
+---
+# Source: couchdb/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reeling-buffalo-couchdb
+  labels:
+    app: couchdb
+    chart: "couchdb-0.1.6"
+    heritage: "Tiller"
+    release: "reeling-buffalo"
+data:
+  inifile: |
+---
+# Source: couchdb/templates/headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: reeling-buffalo-couchdb
+  labels:
+    app: couchdb
+    chart: couchdb-0.1.6
+    release: reeling-buffalo
+    heritage: Tiller
+spec:
+  clusterIP: None
+  ports:
+    - name: couchdb
+      port: 5984
+  selector:
+    app: couchdb
+    release: reeling-buffalo
+---
+# Source: couchdb/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: reeling-buffalo-svc-couchdb
+  labels:
+    app: couchdb
+    chart: couchdb-0.1.6
+    release: reeling-buffalo
+    heritage: Tiller
+spec:
+  ports:
+    - port: 5984
+      protocol: TCP
+      targetPort: 5984
+  type: ClusterIP
+  selector:
+    app: couchdb
+    release: reeling-buffalo
+---
+# Source: couchdb/templates/statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: reeling-buffalo-couchdb
+  labels:
+    app: couchdb
+    chart: couchdb-0.1.6
+    release: reeling-buffalo
+    heritage: Tiller
+spec:
+  replicas: 3
+  serviceName: reeling-buffalo-couchdb
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: couchdb
+      release: reeling-buffalo
+  template:
+    metadata:
+      labels:
+        app: couchdb
+        release: reeling-buffalo
+    spec:
+      initContainers:
+        - name: init-copy
+          image: busybox
+          command: ['sh','-c','cp /tmp/chart.ini /default.d; ls -lrt /default.d;']
+          volumeMounts:
+          - name: config
+            mountPath: /tmp/
+          - name: config-storage
+            mountPath: /default.d
+      containers:
+        - name: couchdb
+          image: "couchdb:2.1.1"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: couchdb
+              containerPort: 5984
+            - name: epmd
+              containerPort: 4369
+            - containerPort: 9100
+          env:
+            - name: COUCHDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: reeling-buffalo-couchdb
+                  key: adminUsername
+            - name: COUCHDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reeling-buffalo-couchdb
+                  key: adminPassword
+            - name: COUCHDB_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: reeling-buffalo-couchdb
+                  key: cookieAuthSecret
+            - name: ERL_FLAGS
+              value: " -name couchdb  -setcookie monster "
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5984
+          readinessProbe:
+            httpGet:
+              path: /_up
+              port: 5984
+          resources:
+            {}
+            
+          volumeMounts:
+          - name: config-storage
+            mountPath: /opt/couchdb/etc/default.d
+          - name: database-storage
+            mountPath: /opt/couchdb/data
+        - name: couchdb-statefulset-assembler
+          image: "kocolosk/couchdb-statefulset-assembler:1.1.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: COUCHDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: reeling-buffalo-couchdb
+                  key: adminUsername
+            - name: COUCHDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reeling-buffalo-couchdb
+                  key: adminPassword
+      volumes:
+        - name: config-storage
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: reeling-buffalo-couchdb
+            items:
+              - key: inifile
+                path: chart.ini
+        - name: database-storage
+          emptyDir: {}

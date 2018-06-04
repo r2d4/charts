@@ -1,0 +1,260 @@
+[debug] Created tunnel using local port: '33643'
+
+[debug] SERVER: "127.0.0.1:33643"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/openvpn
+
+NAME:   terrific-lionfish
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:29 2018
+CHART: openvpn-3.5.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: jfelten/openvpn-docker
+  tag: 1.1.0
+openvpn:
+  OVPN_K8S_POD_NETWORK: 10.0.0.0
+  OVPN_K8S_POD_SUBNET: 255.0.0.0
+  OVPN_NETWORK: 10.240.0.0
+  OVPN_PROTO: tcp
+  OVPN_SUBNET: 255.255.0.0
+  dhcpOptionDomain: true
+  redirectGateway: true
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: true
+  size: 2M
+replicaCount: 1
+resources:
+  limits:
+    cpu: 300m
+    memory: 128Mi
+  requests:
+    cpu: 300m
+    memory: 128Mi
+service:
+  annotations: {}
+  externalIPs: []
+  externalPort: 443
+  internalPort: 443
+  nodePort: 32085
+  type: LoadBalancer
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: openvpn/templates/config-openvpn.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terrific-lionfish-openvpn
+  labels:
+    app: openvpn
+    chart: openvpn-3.5.1
+    release: terrific-lionfish
+    heritage: Tiller
+data:
+  setup-certs.sh: |-
+    #!/bin/bash
+    EASY_RSA_LOC="/etc/openvpn/certs"
+    SERVER_CERT="${EASY_RSA_LOC}/pki/issued/server.crt"
+    if [ -e "$SERVER_CERT" ]
+    then
+      echo "found existing certs - reusing"
+    else
+      cp -R /usr/share/easy-rsa/* $EASY_RSA_LOC
+      cd $EASY_RSA_LOC
+      ./easyrsa init-pki
+      echo "ca\n" | ./easyrsa build-ca nopass
+      ./easyrsa build-server-full server nopass
+      ./easyrsa gen-dh
+    fi
+
+
+  newClientCert.sh: |-
+      #!/bin/bash
+      EASY_RSA_LOC="/etc/openvpn/certs"
+      cd $EASY_RSA_LOC
+      MY_IP_ADDR="$2"
+      ./easyrsa build-client-full $1 nopass
+      cat >${EASY_RSA_LOC}/pki/$1.ovpn <<EOF
+      client
+      nobind
+      dev tun
+      redirect-gateway def1
+      <key>
+      `cat ${EASY_RSA_LOC}/pki/private/$1.key`
+      </key>
+      <cert>
+      `cat ${EASY_RSA_LOC}/pki/issued/$1.crt`
+      </cert>
+      <ca>
+      `cat ${EASY_RSA_LOC}/pki/ca.crt`
+      </ca>
+      <dh>
+      `cat ${EASY_RSA_LOC}/pki/dh.pem`
+      </dh>
+      <connection>
+      remote ${MY_IP_ADDR} 443 tcp
+      </connection>
+      EOF
+      cat pki/$1.ovpn
+
+  configure.sh: |-
+      #!/bin/sh
+      /etc/openvpn/setup/setup-certs.sh
+      iptables -t nat -A POSTROUTING -s 10.240.0.0/255.255.0.0 -o eth0 -j MASQUERADE
+      mkdir -p /dev/net
+      if [ ! -c /dev/net/tun ]; then
+          mknod /dev/net/tun c 10 200
+      fi
+
+      if [ "$DEBUG" == "1" ]; then
+          echo ========== ${OVPN_CONFIG} ==========
+          cat "${OVPN_CONFIG}"
+          echo ====================================
+      fi
+      IP=$(ip route get 8.8.8.8 | awk '/8.8.8.8/ {print $NF}')
+      BASEIP=`echo $IP | cut -d"." -f1-3`
+      NETWORK=`echo $BASEIP".0"`
+      DNS=$(cat /etc/resolv.conf | grep -v '^#' | grep nameserver | awk '{print $2}')
+      SEARCH=$(cat /etc/resolv.conf | grep -v '^#' | grep search | awk '{$1=""; print $0}')
+      cp -f /etc/openvpn/setup/openvpn.conf /etc/openvpn/
+      sed 's|OVPN_K8S_SEARCH|'"${SEARCH}"'|' -i /etc/openvpn/openvpn.conf
+      sed 's|OVPN_K8S_DNS|'"${DNS}"'|' -i /etc/openvpn/openvpn.conf
+      sed 's|NETWORK|'"${NETWORK}"'|' -i /etc/openvpn/openvpn.conf
+
+      openvpn --config /etc/openvpn/openvpn.conf
+  openvpn.conf: |-
+      server 10.240.0.0 255.255.0.0
+      verb 3
+      key /etc/openvpn/certs/pki/private/server.key
+      ca /etc/openvpn/certs/pki/ca.crt
+      cert /etc/openvpn/certs/pki/issued/server.crt
+      dh /etc/openvpn/certs/pki/dh.pem
+
+      key-direction 0
+      keepalive 10 60
+      persist-key
+      persist-tun
+
+      proto tcp
+      port  443
+      dev tun0
+      status /tmp/openvpn-status.log
+
+      user nobody
+      group nogroup
+
+      push "route NETWORK 255.255.240.0"
+
+      push "route 10.0.0.0 255.0.0.0"
+
+
+
+      push "dhcp-option DOMAIN OVPN_K8S_SEARCH"
+
+      push "dhcp-option DNS OVPN_K8S_DNS"
+---
+# Source: openvpn/templates/certs-pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: terrific-lionfish-openvpn
+  labels:
+    app: openvpn
+    chart: openvpn-3.5.1
+    release: terrific-lionfish
+    heritage: Tiller
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "2M"
+---
+# Source: openvpn/templates/openvpn-service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: terrific-lionfish-openvpn
+  labels:
+    app: openvpn
+    chart: openvpn-3.5.1
+    release: terrific-lionfish
+    heritage: Tiller
+spec:
+  ports:
+    - name: openvpn
+      port: 443
+      targetPort: 443
+      protocol: TCP
+  selector:
+    app: openvpn
+    release: terrific-lionfish
+  type: LoadBalancer
+---
+# Source: openvpn/templates/openvpn-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: terrific-lionfish-openvpn
+  labels:
+    app: openvpn
+    chart: openvpn-3.5.1
+    release: terrific-lionfish
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openvpn
+      release: terrific-lionfish
+  template:
+    metadata:
+      labels:
+        app: openvpn
+        release: terrific-lionfish
+      annotations:
+        checksum/config: eae33504ed3be911f391c5cbea2efea86f0dd5814cc5c05fedeef6bc6df79894
+    spec:
+      containers:
+      - name: openvpn
+        image: "jfelten/openvpn-docker:1.1.0"
+        imagePullPolicy: IfNotPresent
+        command: ["/etc/openvpn/setup/configure.sh"]
+        ports:
+        - containerPort: 443
+          name: openvpn
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+        resources:
+          requests:
+            cpu: "300m"
+            memory: "128Mi"
+          limits:
+            cpu: "300m"
+            memory: "128Mi"
+        volumeMounts:
+          - mountPath: /etc/openvpn/setup
+            name: openvpn
+            readOnly: false
+          - mountPath: /etc/openvpn/certs
+            name: certs
+            readOnly: false
+      volumes:
+      - name: openvpn
+        configMap:
+          name: terrific-lionfish-openvpn
+          defaultMode: 0775
+      - name: certs
+        persistentVolumeClaim:
+          claimName: terrific-lionfish-openvpn

@@ -1,0 +1,103 @@
+
+---
+# Source: sentry-kubernetes/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:     
+    app: sentry-kubernetes
+    heritage: Tiller
+    release: zooming-gecko
+    chart: sentry-kubernetes-0.1.4
+  name: zooming-gecko-sentry-kubernetes
+type: Opaque
+data:
+  sentry.dsn: "PGNoYW5nZS1tZT4="
+---
+# Source: sentry-kubernetes/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:     
+    app: sentry-kubernetes
+    heritage: Tiller
+    release: zooming-gecko
+    chart: sentry-kubernetes-0.1.4
+  name: zooming-gecko-sentry-kubernetes
+---
+# Source: sentry-kubernetes/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  labels:     
+    app: sentry-kubernetes
+    heritage: Tiller
+    release: zooming-gecko
+    chart: sentry-kubernetes-0.1.4
+  name: zooming-gecko-sentry-kubernetes
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Source: sentry-kubernetes/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:     
+    app: sentry-kubernetes
+    heritage: Tiller
+    release: zooming-gecko
+    chart: sentry-kubernetes-0.1.4
+  name: zooming-gecko-sentry-kubernetes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: zooming-gecko-sentry-kubernetes
+subjects:
+  - kind: ServiceAccount
+    name: zooming-gecko-sentry-kubernetes
+    namespace: default
+---
+# Source: sentry-kubernetes/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:     
+    app: sentry-kubernetes
+    heritage: Tiller
+    release: zooming-gecko
+    chart: sentry-kubernetes-0.1.4
+  name: zooming-gecko-sentry-kubernetes
+spec:
+  replicas: 
+  selector:
+    matchLabels:
+      app: sentry-kubernetes
+  template:
+    metadata:
+      annotations:
+        checksum/secrets: 3e579173b5e8532d2900831cb2bb6ad176a4b59c32d326ecceb780e5415b635e
+      labels:
+        app: sentry-kubernetes
+        release: zooming-gecko    
+    spec:
+      containers:
+      - name: sentry-kubernetes
+        image: "getsentry/sentry-kubernetes:latest"
+        imagePullPolicy: Always
+        env:
+          - name: DSN
+            valueFrom:
+              secretKeyRef:
+                name: zooming-gecko-sentry-kubernetes
+                key: sentry.dsn
+        resources:
+          {}
+          
+      serviceAccountName: zooming-gecko-sentry-kubernetes

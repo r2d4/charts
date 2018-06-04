@@ -1,0 +1,104 @@
+[debug] Created tunnel using local port: '36121'
+
+[debug] SERVER: "127.0.0.1:36121"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/kube2iam
+
+NAME:   wiggly-seagull
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:22 2018
+CHART: kube2iam-0.9.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+aws:
+  access_key: ""
+  region: ""
+  secret_key: ""
+extraArgs: {}
+extraEnv: {}
+host:
+  interface: docker0
+  ip: $(HOST_IP)
+  iptables: false
+  port: 8181
+image:
+  pullPolicy: IfNotPresent
+  repository: jtblin/kube2iam
+  tag: 0.10.0
+nodeSelector: {}
+podAnnotations: {}
+podLabels: {}
+probe: true
+rbac:
+  create: false
+  serviceAccountName: default
+resources: {}
+tolerations: []
+updateStrategy: OnDelete
+verbose: false
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: kube2iam/templates/daemonset.yaml
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: kube2iam
+    chart: kube2iam-0.9.0
+    heritage: Tiller
+    release: wiggly-seagull
+  name: wiggly-seagull-kube2iam
+spec:
+  template:
+    metadata:
+      labels:
+        app: kube2iam
+        release: wiggly-seagull
+    spec:
+      containers:
+        - name: kube2iam
+          image: "jtblin/kube2iam:0.10.0"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - --host-interface=docker0
+            - --node=$(NODE_NAME)
+            - --iptables=false
+            - --app-port=8181
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - containerPort: 8181
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8181
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 1
+          resources:
+            {}
+            
+      hostNetwork: true
+      serviceAccountName: "default"
+      tolerations:
+        []
+        
+  updateStrategy:
+    type: OnDelete

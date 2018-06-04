@@ -1,0 +1,40 @@
+[debug] Created tunnel using local port: '43341'
+
+[debug] SERVER: "127.0.0.1:43341"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/gcp-night-king
+
+NAME:   knotted-koala
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:19 2018
+CHART: gcp-night-king-1.0.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: itamarost/gcp-night-king
+  tag: v1-golang
+nodeSelector: {}
+projectID: MUST PROVIDE PROJECT ID
+replicaCount: 1
+resources: {}
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: gcp-night-king/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knotted-koala-gcp-night-king-config
+  labels:
+    app: gcp-night-king
+    chart: gcp-night-king-1.0.2
+    heritage: Tiller
+    release: knotted-koala
+data:
+  project.id: "MUST PROVIDE PROJECT ID"

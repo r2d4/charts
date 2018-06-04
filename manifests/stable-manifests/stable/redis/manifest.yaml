@@ -1,0 +1,219 @@
+
+---
+# Source: redis/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vetoed-badger-redis
+  labels:
+    app: redis
+    chart: redis-3.3.2
+    release: "vetoed-badger"
+    heritage: "Tiller"
+type: Opaque
+data:
+  redis-password: "a3ZaUzlLOFZDVw=="
+---
+# Source: redis/templates/redis-master-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: vetoed-badger-redis-master
+  labels:
+    app: redis
+    chart: redis-3.3.2
+    release: "vetoed-badger"
+    heritage: "Tiller"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+  selector:
+    app: redis
+    release: "vetoed-badger"
+    role: master
+---
+# Source: redis/templates/redis-slave-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: vetoed-badger-redis-slave
+  labels:
+    app: redis
+    chart: redis-3.3.2
+    release: "vetoed-badger"
+    heritage: "Tiller"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+  selector:
+    app: redis
+    release: "vetoed-badger"
+    role: slave
+---
+# Source: redis/templates/redis-slave-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vetoed-badger-redis-slave
+  labels:
+    app: redis
+    chart: redis-3.3.2
+    release: "vetoed-badger"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        release: "vetoed-badger"
+        role: slave
+        app: redis
+    spec:      
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 1001
+      containers:
+      - name: vetoed-badger-redis
+        image: docker.io/bitnami/redis:4.0.9
+        imagePullPolicy: "Always"
+        env:
+        - name: REDIS_REPLICATION_MODE
+          value: slave
+        - name: REDIS_MASTER_HOST
+          value: vetoed-badger-redis-master
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_MASTER_PORT_NUMBER
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vetoed-badger-redis
+              key: redis-password
+        - name: REDIS_MASTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vetoed-badger-redis
+              key: redis-password
+        - name: REDIS_DISABLE_COMMANDS
+          value: FLUSHDB,FLUSHALL
+        ports:
+        - name: redis
+          containerPort: 6379        
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - redis-cli
+            - ping        
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - redis-cli
+            - ping
+        resources:
+          null
+---
+# Source: redis/templates/redis-master-statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: vetoed-badger-redis-master
+  labels:
+    app: redis
+    chart: redis-3.3.2
+    release: "vetoed-badger"
+    heritage: "Tiller"
+spec:
+  selector:
+    matchLabels:
+      release: "vetoed-badger"
+      role: master
+      app: redis
+  serviceName: "redis-master"  
+  template:
+    metadata:
+      labels:
+        release: "vetoed-badger"
+        role: master
+        app: redis
+    spec:
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 1001
+      containers:
+      - name: vetoed-badger-redis
+        image: "docker.io/bitnami/redis:4.0.9"
+        imagePullPolicy: "Always"
+        env:
+        - name: REDIS_REPLICATION_MODE
+          value: master
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vetoed-badger-redis
+              key: redis-password
+        - name: REDIS_DISABLE_COMMANDS
+          value: FLUSHDB,FLUSHALL
+        ports:
+        - name: redis
+          containerPort: 6379
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - redis-cli
+            - ping
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - redis-cli
+            - ping
+        resources:
+          null
+          
+        volumeMounts:
+        - name: redis-data
+          mountPath: /bitnami/redis/data
+          subPath: 
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app: "redis"
+          chart: redis-3.3.2
+          component: "master"
+          release: "vetoed-badger"
+          heritage: "Tiller"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"

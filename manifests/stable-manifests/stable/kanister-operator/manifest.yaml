@@ -1,0 +1,94 @@
+
+---
+# Source: kanister-operator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    heritage: Tiller
+    release: esteemed-wasp
+    chart: kanister-operator-0.2.3
+    app: kanister-operator
+  name: esteemed-wasp-kanister-operator
+---
+# Source: kanister-operator/templates/rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  labels:
+    heritage: Tiller
+    release: esteemed-wasp
+    chart: kanister-operator-0.2.3
+    app: kanister-operator
+  name: esteemed-wasp-kanister-operator-cluster-role
+rules:
+- apiGroups:
+  - cr.kanister.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+---
+# Source: kanister-operator/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  labels:
+    heritage: Tiller
+    release: esteemed-wasp
+    chart: kanister-operator-0.2.3
+    app: kanister-operator
+  name: esteemed-wasp-kanister-operator-edit-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+subjects:
+- kind: ServiceAccount
+  name: esteemed-wasp-kanister-operator
+  namespace: default
+---
+# Source: kanister-operator/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  labels:
+    heritage: Tiller
+    release: esteemed-wasp
+    chart: kanister-operator-0.2.3
+    app: kanister-operator
+  name: esteemed-wasp-kanister-operator-cr-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: esteemed-wasp-kanister-operator-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: esteemed-wasp-kanister-operator
+  namespace: default
+---
+# Source: kanister-operator/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: esteemed-wasp-kanister-operator
+  labels:
+    heritage: Tiller
+    release: esteemed-wasp
+    chart: kanister-operator-0.2.3
+    app: kanister-operator
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        heritage: Tiller
+        release: esteemed-wasp
+        chart: kanister-operator-0.2.3
+        app: kanister-operator
+    spec:
+      serviceAccountName: esteemed-wasp-kanister-operator
+      containers:
+      - name: esteemed-wasp-kanister-operator
+        image: kanisterio/controller:v0.2.0
+        imagePullPolicy: IfNotPresent

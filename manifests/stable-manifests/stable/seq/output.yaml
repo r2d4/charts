@@ -1,0 +1,128 @@
+[debug] Created tunnel using local port: '44191'
+
+[debug] SERVER: "127.0.0.1:44191"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/seq
+
+NAME:   sullen-liger
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:34 2018
+CHART: seq-0.1.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+acceptEULA: "Y"
+affinity: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: datalust/seq
+  tag: 5.0.832-pre
+nodeSelector: {}
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: true
+  path: /data
+  size: 8Gi
+  subPath: ""
+resources: {}
+service:
+  port: 5341
+  type: ClusterIP
+tolerations: []
+ui:
+  enabled: true
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: seq/templates/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: sullen-liger-seq
+  labels:
+    app: sullen-liger-seq
+    chart: "seq-0.1.1"
+    release: "sullen-liger"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "8Gi"
+---
+# Source: seq/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sullen-liger-seq
+  labels:
+    app: seq
+    chart: seq-0.1.1
+    release: sullen-liger
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5341
+      targetPort: ui
+      protocol: TCP
+      name: http
+  selector:
+    app: seq
+    release: sullen-liger
+---
+# Source: seq/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: sullen-liger-seq
+  labels:
+    app: seq
+    chart: seq-0.1.1
+    release: sullen-liger
+    heritage: Tiller
+spec:
+  selector:
+    matchLabels:
+      app: seq
+      release: sullen-liger
+  template:
+    metadata:
+      labels:
+        app: seq
+        release: sullen-liger
+    spec:
+      containers:
+        - name: seq
+          image: "datalust/seq:5.0.832-pre"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: "ACCEPT_EULA"
+              value: "Y"
+          ports:
+            - name: ingestion
+              containerPort: 5341
+              protocol: TCP
+            - name: ui
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: ui
+          readinessProbe:
+            httpGet:
+              path: /
+              port: ui
+          resources:
+            {}
+            
+    volumes:
+      - name: seq-data
+        persistentVolumeClaim:
+          claimName: sullen-liger-seq

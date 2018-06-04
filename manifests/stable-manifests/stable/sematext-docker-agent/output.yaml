@@ -1,0 +1,57 @@
+[debug] Created tunnel using local port: '37465'
+
+[debug] SERVER: "127.0.0.1:37465"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/sematext-docker-agent
+
+NAME:   telling-zebra
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:34 2018
+CHART: sematext-docker-agent-0.1.5
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: sematext/sematext-agent-docker
+  tag: 1.31.50
+sematext:
+  config: null
+  name: sematext-docker-agent
+  region: US
+  resources: {}
+  useHostNetwork: false
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: sematext-docker-agent/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telling-zebra-sematext-docker-agent
+  labels:
+    app: sematext-docker-agent
+    chart: sematext-docker-agent-0.1.5
+    release: telling-zebra
+type: Opaque
+data:
+  spm-token: ""
+  logsene-token: ""
+---
+# Source: sematext-docker-agent/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telling-zebra-sematext-docker-agent
+  labels:
+    app: sematext-docker-agent
+    chart: sematext-docker-agent-0.1.5
+    release: telling-zebra
+data:
+  SPM_RECEIVER_URL: "https://spm-receiver.sematext.com/receiver/v1"
+  LOGSENE_RECEIVER_URL: "https://logsene-receiver.sematext.com"
+  EVENTS_RECEIVER_URL: "https://event-receiver.sematext.com"

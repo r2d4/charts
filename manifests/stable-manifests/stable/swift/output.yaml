@@ -1,0 +1,146 @@
+[debug] Created tunnel using local port: '40969'
+
+[debug] SERVER: "127.0.0.1:40969"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/swift
+
+NAME:   crazy-rat
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:36 2018
+CHART: swift-0.6.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+imagePullPolicy: IfNotPresent
+logLevel: 3
+nodeSelector: {}
+rbac:
+  create: true
+replicaCount: 1
+serviceAccount:
+  create: true
+  name: null
+swift:
+  image: appscode/swift
+  tag: 0.7.3
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: swift/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: swift-crazy-rat
+  labels:
+    chart: "swift-0.6.3"
+    app: "swift"
+    heritage: "Tiller"
+    release: "crazy-rat"
+---
+# Source: swift/templates/cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: swift-crazy-rat
+  labels:
+    chart: "swift-0.6.3"
+    app: "swift"
+    heritage: "Tiller"
+    release: "crazy-rat"
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "services"]
+  verbs: ["list"]
+---
+# Source: swift/templates/cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: swift-crazy-rat
+  labels:
+    chart: "swift-0.6.3"
+    app: "swift"
+    heritage: "Tiller"
+    release: "crazy-rat"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: swift-crazy-rat
+subjects:
+- kind: ServiceAccount
+  name: swift-crazy-rat
+  namespace: default
+---
+# Source: swift/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: swift-crazy-rat
+  labels:
+    app: "swift"
+    chart: "swift-0.6.3"
+    release: "crazy-rat"
+    heritage: "Tiller"
+spec:
+  ports:
+  - name: pt
+    port: 9855
+    targetPort: pt
+  - name: tls
+    port: 50055
+    targetPort: tls
+  - name: ops
+    port: 56790
+    targetPort: ops
+  selector:
+    app: "swift"
+    release: "crazy-rat"
+---
+# Source: swift/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: swift-crazy-rat
+  labels:
+    chart: "swift-0.6.3"
+    app: "swift"
+    heritage: "Tiller"
+    release: "crazy-rat"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: "swift"
+        release: "crazy-rat"
+    spec:
+      serviceAccountName: swift-crazy-rat
+      containers:
+      - args:
+        - run
+        - --v=3
+        - --connector=incluster
+        - --tiller-insecure-skip-verify=true
+        image: appscode/swift:0.7.3
+        imagePullPolicy: IfNotPresent
+        name: swift
+        ports:
+        - containerPort: 9855
+          name: pt
+          protocol: TCP
+        - containerPort: 50055
+          name: tls
+          protocol: TCP
+        - containerPort: 56790
+          name: ops
+          protocol: TCP
+        volumeMounts:
+            - mountPath: /tmp
+              name: chart-volume
+      volumes:
+        - name: chart-volume
+          emptyDir: {}

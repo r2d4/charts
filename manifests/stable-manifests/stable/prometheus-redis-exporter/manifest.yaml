@@ -1,0 +1,70 @@
+
+---
+# Source: prometheus-redis-exporter/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ponderous-quetzal-prometheus-redis-exporter
+  labels:
+    app: prometheus-redis-exporter
+    chart: prometheus-redis-exporter-0.1.2
+    release: ponderous-quetzal
+    heritage: Tiller
+  annotations:
+    {}
+    
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9121
+      targetPort: exporter-port
+      protocol: TCP
+  selector:
+    app: prometheus-redis-exporter
+    release: ponderous-quetzal
+---
+# Source: prometheus-redis-exporter/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ponderous-quetzal-prometheus-redis-exporter
+  labels:
+    app: prometheus-redis-exporter
+    chart: prometheus-redis-exporter-0.1.2
+    release: ponderous-quetzal
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-redis-exporter
+      release: ponderous-quetzal
+  template:
+    metadata:
+      annotations:
+        {}
+        
+      labels:
+        app: prometheus-redis-exporter
+        release: ponderous-quetzal
+    spec:
+      containers:
+        - name: prometheus-redis-exporter
+          image: "oliver006/redis_exporter:v0.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: exporter-port
+              containerPort: 9121
+          env:
+            - name: REDIS_ADDR
+              value: redis://myredis:6379
+          livenessProbe:
+            httpGet:
+              path: /
+              port: exporter-port
+          readinessProbe:
+            httpGet:
+              path: /
+              port: exporter-port
+          resources:
+            {}

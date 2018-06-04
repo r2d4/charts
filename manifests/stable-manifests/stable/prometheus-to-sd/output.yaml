@@ -1,0 +1,59 @@
+[debug] Created tunnel using local port: '42549'
+
+[debug] SERVER: "127.0.0.1:42549"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/prometheus-to-sd
+
+NAME:   ignorant-octopus
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:32 2018
+CHART: prometheus-to-sd-0.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: gcr.io/google-containers/prometheus-to-sd
+  tag: v0.2.2
+metricsSources: {}
+nodeSelector: {}
+port: 6060
+replicaCount: 1
+resources: {}
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: prometheus-to-sd/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: ignorant-octopus
+  labels:
+    app: prometheus-to-sd
+    chart: prometheus-to-sd-0.1.0
+    release: ignorant-octopus
+    heritage: Tiller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: prometheus-to-sd
+        release: ignorant-octopus
+    spec:
+      containers:
+        - name: prometheus-to-sd
+          image: "gcr.io/google-containers/prometheus-to-sd:v0.2.2"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: profiler
+              containerPort: 6060
+          command:
+            - /monitor
+            - --stackdriver-prefix=custom.googleapis.com
+          resources:
+            {}

@@ -1,0 +1,117 @@
+[debug] Created tunnel using local port: '38833'
+
+[debug] SERVER: "127.0.0.1:38833"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/keel
+
+NAME:   cautious-panda
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:21 2018
+CHART: keel-0.3.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+gcr:
+  enabled: false
+  projectId: ""
+  pubSub:
+    enabled: false
+helmProvider:
+  enabled: false
+image:
+  pullPolicy: IfNotPresent
+  repository: keelhq/keel
+  tag: 0.8.3
+keel:
+  images:
+  - repository: image.repository
+    tag: image.tag
+  policy: all
+  pollSchedule: '@every 3m'
+  trigger: poll
+nodeSelector: {}
+polling:
+  enabled: true
+service:
+  enabled: false
+  externalPort: 9300
+  type: LoadBalancer
+slack:
+  botName: ""
+  channel: ""
+  enabled: false
+  token: ""
+webhook:
+  enabled: false
+  endpoint: ""
+webhookRelay:
+  bucket: ""
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: webhookrelay/webhookrelayd
+    tag: 0.6.3
+  key: ""
+  secret: ""
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: keel/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cautious-panda-keel
+  namespace: kube-system
+  labels:
+    app: keel
+    chart: "keel-0.3.0"
+    release: "cautious-panda"
+    heritage: "Tiller"
+---
+# Source: keel/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cautious-panda-keel
+  namespace: kube-system
+  labels:
+    app: keel
+    chart: keel-0.3.0
+    release: cautious-panda
+    heritage: Tiller
+  annotations:
+    kubernetes.io/service-account.name: keel
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: keel
+        release: cautious-panda
+    spec:
+      containers:
+        - name: keel
+          image: "keelhq/keel:0.8.3"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/keel"]
+          env:
+            # Enable polling
+            - name: POLL
+              value: "1"
+          ports:
+            - containerPort: 9300
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9300
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+          resources:
+            null
+            
+      nodeSelector:
+        {}

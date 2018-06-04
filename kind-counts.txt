@@ -1,0 +1,101 @@
+# grep -hr "kind:" . | sort | uniq -c | sort -bgr 
+
+    258 kind: Service
+    233 kind: Deployment
+    145 kind: Secret
+    141 kind: ConfigMap
+    101 kind: PersistentVolumeClaim
+     89 kind: ServiceAccount
+     81 kind: Ingress
+     71   kind: ClusterRole
+     70 kind: ClusterRoleBinding
+     66 kind: ClusterRole
+     62 - kind: ServiceAccount
+     38 kind: StatefulSet
+     31   - kind: ServiceAccount
+     28 kind: CustomResourceDefinition
+     26 kind: DaemonSet
+     25 kind: RoleBinding
+     22   kind: Role
+     22 kind: Pod
+     20 kind: PodDisruptionBudget
+     19 kind: Role
+     16 kind: Job
+      9 kind: NetworkPolicy
+      8 kind: StorageClass
+      6 kind: metric
+      4 kind: ServiceMonitor
+      4 kind: PersistentVolume
+      3 kind: ValidatingWebhookConfiguration
+      3 kind: rule
+      3     kind: DISTRIBUTION
+      3     kind: COUNTER
+      3 kind: APIService
+      2     kind: ServiceAccount
+      2 kind: Secret
+      2 kind: ReplicationController
+      2 kind: PodSecurityPolicy
+      2     kind: PersistentVolume
+      2 kind: Namespace
+      2 kind: CronJob
+      2 kind: attributemanifest
+      1             "value": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: pod-name-prefix-{\{ POD_POSTFIX }\}\n  labels:\n    app: web\nspec:\n  containers:\n    - name: gocd-agent-container-{\{ CONTAINER_POSTFIX }\}\n      image: {\{ GOCD_AGENT_IMAGE }\}:{\{ LATEST_VERSION }\}\n      securityContext:\n        privileged: true"
+      1   kind: {{ .Values.tiller.role.type }}
+      1 kind: ThirdPartyResource
+      1     kind: svcctrl
+      1 - kind: {{ .subject.kind }}
+      1     kind: StoragePoolClaim
+      1     kind: StoragePool
+      1 kind: stdio
+      1     kind: stdio
+      1     kind: statsd
+      1     kind: stackdriver
+      1   kind: Secret
+      1     kind: rule
+      1     kind: RouteRule
+      1   kind: {{ .role.kind }}
+      1     kind: reportnothing
+      1     kind: quota
+      1 kind: prometheus
+      1     kind: prometheus
+      1   kind: Pod
+      1     kind: PersistentVolumeClaim
+      1     kind: noop
+      1 kind: MutatingWebhookConfiguration
+      1     kind: metric
+      1     kind: memquota
+      1 kind: logentry
+      1     kind: logentry
+      1     kind: listentry
+      1     kind: listchecker
+      1     kind: Issuer
+      1       - kind: io.l5d.thriftNameInterpreter
+      1     - kind: io.l5d.k8s
+      1       kind: io.l5d.k8s
+      1       - kind: io.l5d.k8s
+      1       - kind: io.l5d.httpController
+      1 kind: InstanceGroup
+      1 kind: InitializerConfiguration
+      1   kind: Ingress
+      1     kind: HTTPTrigger
+      1 kind: HorizontalPodAutoscaler
+      1 #     kind: Group
+      1     kind: Group
+      1     kind: Function
+      1 kind: "EtcdRestore"
+      1 kind: "EtcdCluster"
+      1 kind: "EtcdBackup"
+      1 kind: Endpoints
+      1     kind: EgressRule
+      1     kind: DestinationPolicy
+      1   kind: Deployment
+      1     kind: Deployment
+      1     kind: denier
+      1     kind: CronJobTrigger
+      1 #     kind: ClusterRole
+      1     kind: ClusterRole
+      1     kind: ClusterIssuer
+      1 kind: Cluster
+      1     kind: checknothing
+      1     kind: Certificate
+      1     kind: attributemanifest

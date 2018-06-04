@@ -1,0 +1,61 @@
+[debug] Created tunnel using local port: '33713'
+
+[debug] SERVER: "127.0.0.1:33713"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/sysdig
+
+NAME:   edgy-dog
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:36 2018
+CHART: sysdig-0.4.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: Always
+  repository: sysdig/agent
+  tag: latest
+rbac:
+  apiVersion: v1beta1
+  install: false
+resources:
+  limits:
+    cpu: 500m
+    memory: 768Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+secure:
+  SecureConf: |
+    security: {enabled: true}
+    commandlines_capture: {enabled: true}
+    memdump: {enabled: true}
+  enable: false
+sysdig:
+  AdditionalConf: ""
+  AgentTags: ""
+  serviceAccountName: sysdig-account
+tolerations:
+- effect: NoSchedule
+  key: node-role.kubernetes.io/master
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: sysdig/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: edgy-dog-sysdig
+  labels:
+    app: edgy-dog-sysdig
+    chart: "sysdig-0.4.1"
+    release: "edgy-dog"
+    heritage: "Tiller"
+type: Opaque
+data:
+ access-key : "TUlTU0lORw=="
+ tags : ""

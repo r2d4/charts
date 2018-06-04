@@ -1,0 +1,66 @@
+[debug] Created tunnel using local port: '44447'
+
+[debug] SERVER: "127.0.0.1:44447"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/spotify-docker-gc
+
+NAME:   opinionated-wolf
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:35 2018
+CHART: spotify-docker-gc-0.1.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+cron:
+  log: /var/log/crond.log
+  schedule: 0 0 * * *
+env:
+  gracePeriodSeconds: "0"
+image:
+  org: spotify
+  pullPolicy: IfNotPresent
+  registry: docker.io
+  repository: docker-gc
+  tag: latest
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: spotify-docker-gc/templates/daemonset.yaml
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: spotify-docker-gc
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        daemonset: spotify-docker-gc
+    spec:
+      containers:
+      - name: spotify-docker-gc
+        image: "docker.io/spotify/docker-gc:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh"]
+        args: ["-c", '
+          touch /var/log/crond.log &&
+          echo "0 0 * * * /docker-gc >> /var/log/crond.log 2>&1" | crontab - &&
+          crond -L /var/log/crond.log &&
+          tail -f /var/log/crond.log' ]
+        env:
+        - name: GRACE_PERIOD_SECONDS
+          value: "0"
+        - name: DOCKER_API_VERSION
+          value: ""
+        volumeMounts:
+        - name: docker-socket
+          mountPath: /var/run/docker.sock
+      volumes:
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock

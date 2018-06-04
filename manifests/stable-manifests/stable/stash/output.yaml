@@ -1,0 +1,368 @@
+[debug] Created tunnel using local port: '44177'
+
+[debug] SERVER: "127.0.0.1:44177"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/stash
+
+NAME:   piquant-orangutan
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:35 2018
+CHART: stash-0.5.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+apiserver:
+  ca: null
+  enableAdmissionWebhook: false
+  groupPriorityMinimum: 10000
+  versionPriority: 15
+criticalAddon: false
+imagePullPolicy: IfNotPresent
+operator:
+  image: appscode/stash
+  tag: 0.7.0-rc.1
+pushgateway:
+  image: prom/pushgateway
+  tag: v0.4.0
+rbac:
+  create: true
+replicaCount: 1
+serviceAccount:
+  create: true
+  name: null
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: stash/templates/apiregistration.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: piquant-orangutan-stash-apiserver-cert
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+type: Opaque
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSRENDQWl5Z0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwemRtTXQKWTJGMExXTmhNQjRYRFRFNE1EWXdNakl5TURBek5Wb1hEVEk0TURVek1ESXlNREF6TlZvd0lqRWdNQjRHQTFVRQpBeE1YY0dseGRXRnVkQzF2Y21GdVozVjBZVzR0YzNSaGMyZ3dnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCCkR3QXdnZ0VLQW9JQkFRRERCY3p3QVd1dlp1OVZ3Q3BmNUpmazlIR21yL212MFljNndzU1JRWk4xYWlDd2dkdHYKdWtUemxPUGRBNjNobjZER1Y3cXhONmUzRWkyRFE0V0c3Vm91aDA2TThyOUIyMndPa3d2ck52YWJEM2pGUUsydQpmZGJQUkVTWHI2Q3lkWHRRaVVLTSt3RmNQZTIxZW5FSlNGNkd3Q1BYRVpCNXdPWEhhaGNtQUlNem9WYUNZT0YxCm9xVjlUK1Fpd01NUHpOM0hDR2hXVkcyRkEwbUFkL3VsWUF0QUhoa0FuRmF0R3IzcDdsUjlaaFlqQXl2dUN0VDYKeXFBMjJ6eDhuVzhoNjhQK25uN0xpYUdyd1NGRmh1Z1lxL1NkTEs1U2NPTnQ4VFYvU1JrK1NSR1VtemxDdzNUNQpwSFFxZ241Nmw4S0ZMTmlHMVdWZUxFSEs4Y0N2ZUFKSFBZbUxBZ01CQUFHamdaRXdnWTR3RGdZRFZSMFBBUUgvCkJBUURBZ1dnTUIwR0ExVWRKUVFXTUJRR0NDc0dBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQU1CZ05WSFJNQkFmOEUKQWpBQU1FOEdBMVVkRVFSSU1FYUNIM0JwY1hWaGJuUXRiM0poYm1kMWRHRnVMWE4wWVhOb0xtUmxabUYxYkhTQwpJM0JwY1hWaGJuUXRiM0poYm1kMWRHRnVMWE4wWVhOb0xtUmxabUYxYkhRdWMzWmpNQTBHQ1NxR1NJYjNEUUVCCkN3VUFBNElCQVFCR2R3WXdlWlFNVStHL0JnblRQZWZ1Uy9YQXFJQ2ZIb1AwaGVPOUdLNHoyS2tMeDhRNk02MFEKQlBabUE2ZjZkdUJFY3FkZnFPL1daK2pacENVcXh4SDJMWE56OURYY1k2ZnF2Rm03c1ZhOERKbG1sWEpWNFo4MApYakNFOGRqMzM5V3RyNmRIV1dhMCt3K1dMTDJHTTFnN3B4L1paQnV1YUZlbGVFVDNGbTJCT2JUbWlyWEpmc1VzCktyN0RHa3dBaDJUTnNReVRkekFreDV3aVRmMUtuNmtBUmZuMUVXbDd4UVQwdUNmUDVFbTk0Vk51eG12cGxWcTEKcmZWYy9vYStCYzJxMlExQUIvQ3k2VmJqb0w3OExGSnlMZHN1UEppVUxpMStqZTFidlNoalJ5bVp5cmp0dmQ2Ngpnd2xCb0JYaGtETExUK1ExeXpPM2ZtVzBNTzkwRlRuTAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBd3dYTThBRnJyMmJ2VmNBcVgrU1g1UFJ4cHEvNXI5R0hPc0xFa1VHVGRXb2dzSUhiCmI3cEU4NVRqM1FPdDRaK2d4bGU2c1RlbnR4SXRnME9GaHUxYUxvZE9qUEsvUWR0c0RwTUw2emIybXc5NHhVQ3QKcm4zV3owUkVsNitnc25WN1VJbENqUHNCWEQzdHRYcHhDVWhlaHNBajF4R1FlY0RseDJvWEpnQ0RNNkZXZ21EaApkYUtsZlUva0lzREREOHpkeHdob1ZsUnRoUU5KZ0hmN3BXQUxRQjRaQUp4V3JScTk2ZTVVZldZV0l3TXI3Z3JVCitzcWdOdHM4ZkoxdklldkQvcDUreTRtaHE4RWhSWWJvR0t2MG5TeXVVbkRqYmZFMWYwa1pQa2tSbEpzNVFzTjAKK2FSMEtvSitlcGZDaFN6WWh0VmxYaXhCeXZIQXIzZ0NSejJKaXdJREFRQUJBb0lCQUdZekcvcUtSQXhmUFAwSwoveW5SZVdnYVVaU3drNEIzcFE0K0V4U3I4TUtQSXlKY2FzcGFLdGdiSm00a0IzTTlXOXVWRGRqZytac09nNXRPClB5TStMd3hEQy84QkZ3bEVHNVJucXM5UXRscjcrS1ltQnQ1eVE2Zktkc2VtMmVlcmVUdnpNbFQvRk85cDVMQTkKd2c3RFJnWUhtc0NTQzh4Q01pZ1dpSnI1bWNmcjBTYStRSUdpRUk4V0NXT2JDTDBjakJUQy9Tenl3THBaUHNiNgpQY2M5Tmx6S2ptN0NIbUhpNk1zVUhRSWdiV2ZPY3AwUXlWb3l3ckMyc2k2RWlPbVlMKy9yVXp4Sk9aWjlXYUdFCnk2WnlqL09YS3pKRXJMbnhqZitRWWt5aS9uNTZUNmF6aFJ3Z0ZubElPQm94eGdFV2RJUXFGWGVtMk9ZeDJSWm0KNWZmMll3RUNnWUVBOTQ4NEEyYUxveFJqSW0vNzZEaEZ2YkFiQlk3dGZhcnFZOUlhUjRhb1JMRFpVRFd4dGVXMwp3WmUyR2hySWdrQTlkWjdCVnJldGhEaTcvQkZLbnRaOGQ5ei9yb2puanNVNzJLMldZWEJXaUJzVE8rV2ErTnNNCk14cUowRjMwbW9xUHlhdXBxSEdjZ01MYVc1NDRSZXUxbVVGK3pKZUoweDZJS1RrMlRDUkcxM3NDZ1lFQXlhd0YKN2I0MXRCckIvem5yOE9lV3pMYmQvSUswNUttcFVVRnBMVmM2QjVwcHUyemZjRVNwN1h6aEtpMnVkUDZtdnNCUwo3VVpOblFLa3pqNnJNVVVxU3JNSjFGRnl2ZTFUbS9lcEc2ZFZVUWdaVmpWZy9FdDM0aC9USU5ObzlINXd0SFVsCmhKNHM1enJTdzBDNE43UUhSclNQODFnTGNLblQ2N2hVT1hSamNURUNnWUJWNWVmMXBodEZsc2xmSmFRdXkzZkgKZmRlaWNobU54VVJYSm92ZnphV05VQi9YYVFva3AzUy9RN2o0RGRzTTl1VmNicDEvVFhSenNJdnB4c1l4bnhMSgpOSEd6U2VXdThGajNzaU8vNDQ3aTR5SWxZbUlIZjFvWVVWa0laOUY3M2lCT1JiWTBzRmN4aG1ybDUxeDNSblpZCm14VTRRRXllYUxXdU9CL1RBN05oQ1FLQmdEWmdxdXlTMkJvckNOb1B2UjJrNUZWb2pXeVR0Y0RlT21oTmNkV20KNmwrNGMvLzBlRDdtVk1kVFg4Y21zQjZkdDBwQncxcDFGV0pibnlKNVpXR1FtN211a3R6cjVUdHU3WmRsYlBTbQo1dXRGZXNkeTl5YXdGckFqRXFPTVBZV0hQazU2TTlhUmE5d2hVVWtTZjFtTnNsU1BSUzFCTlR4NG5rcTExZ2Z6CjZRaFJBb0dBZXl3OUd5ampSSkJ1Q1I5SXNLbUpWQXpEUTVOL2dCd3pnYnNoek5mWkxsbmoreFhGQnNyVjdkbDEKclQrdDRKR3F1Z2h5ZVQ4eWMrVVloYWhvTGNtYkJBaFpNN1Z1b0tJaU9YME5CUmVaM283eDkxRXdsb3dqMmljSwpSS1I1SnpZbXg4bDZ3YVVNTEVIRGx6VS9wVUZxVzRKb2txNXIrU0ZVakxIWTZVWUlZODQ9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+---
+# Source: stash/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: piquant-orangutan-stash
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+---
+# Source: stash/templates/cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: piquant-orangutan-stash
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+rules:
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - "*"
+- apiGroups:
+  - extensions
+  resources:
+  - thirdpartyresources
+  verbs:
+  - "*"
+- apiGroups:
+  - stash.appscode.com
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  - cronjobs
+  verbs: ["get", "list", "watch", "create", "delete", "patch"]
+- apiGroups:
+  - extensions
+  resources:
+  - replicasets
+  - daemonsets
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - replicationcontrollers
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["create", "update", "get", "delete"]
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs: ["get"]
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: ["create"]
+- apiGroups: [""]
+  resources:
+  - nodes
+  verbs: ["list"]
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["get", "create", "list", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources:
+  - serviceaccounts
+  verbs: ["get", "create", "patch", "delete"]
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - roles
+  - rolebindings
+  verbs: ["get", "create", "delete", "patch"]
+---
+# Source: stash/templates/user-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: appscode:stash:edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups:
+  - stash.appscode.com
+  resources:
+  - restics
+  - recoveries
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+# Source: stash/templates/user-roles.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: appscode:stash:view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups:
+  - stash.appscode.com
+  resources:
+  - restics
+  - recoveries
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: stash/templates/apiregistration.yaml
+# to delegate authentication and authorization
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: piquant-orangutan-stash-apiserver-auth-delegator
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: piquant-orangutan-stash
+  namespace: default
+---
+# Source: stash/templates/cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: piquant-orangutan-stash
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: piquant-orangutan-stash
+subjects:
+- kind: ServiceAccount
+  name: piquant-orangutan-stash
+  namespace: default
+---
+# Source: stash/templates/apiregistration.yaml
+# to read the config for terminating authentication
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: piquant-orangutan-stash-apiserver-extension-server-authentication-reader
+  namespace: kube-system
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: extension-apiserver-authentication-reader
+subjects:
+- kind: ServiceAccount
+  name: piquant-orangutan-stash
+  namespace: default
+---
+# Source: stash/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: piquant-orangutan-stash
+  labels:
+    app: "stash"
+    chart: "stash-0.5.3"
+    release: "piquant-orangutan"
+    heritage: "Tiller"
+spec:
+  ports:
+  # Port used to expose admission webhook apiserver
+  - name: admission
+    port: 443
+    targetPort: 8443
+  # Port used to expose Prometheus pushgateway
+  - name: pushgateway
+    port: 56789
+    protocol: TCP
+    targetPort: 56789
+  # Port used to expose Prometheus metrics for the operator
+  - name: ops
+    port: 56790
+    protocol: TCP
+    targetPort: 56790
+  selector:
+    app: "stash"
+    release: "piquant-orangutan"
+---
+# Source: stash/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: piquant-orangutan-stash
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "stash"
+      release: "piquant-orangutan"
+  template:
+    metadata:
+      labels:
+        app: "stash"
+        release: "piquant-orangutan"
+    spec:
+      serviceAccountName: piquant-orangutan-stash
+      containers:
+      - name: operator
+        image: appscode/stash:0.7.0-rc.1
+        imagePullPolicy: IfNotPresent
+        args:
+        - run
+        - --v=3
+        - --rbac=true
+        - --docker-registry=
+        - --secure-port=8443
+        - --audit-log-path=-
+        - --tls-cert-file=/var/serving-cert/tls.crt
+        - --tls-private-key-file=/var/serving-cert/tls.key
+        ports:
+        - containerPort: 8443
+        - containerPort: 56790
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8443
+            scheme: HTTPS
+        volumeMounts:
+        - mountPath: /var/serving-cert
+          name: serving-cert
+      - name: pushgateway
+        image: 'prom/pushgateway:v0.4.0'
+        imagePullPolicy: IfNotPresent
+        args:
+        - -web.listen-address=:56789
+        - -persistence.file=/var/pv/pushgateway.dat
+        ports:
+        - containerPort: 56789
+        volumeMounts:
+        - mountPath: /var/pv
+          name: data-volume
+        - mountPath: /tmp
+          name: stash-scratchdir
+      volumes:
+      - emptyDir: {}
+        name: data-volume
+      - emptyDir: {}
+        name: stash-scratchdir
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: piquant-orangutan-stash-apiserver-cert
+---
+# Source: stash/templates/apiregistration.yaml
+apiVersion: apiregistration.k8s.io/v1beta1
+kind: APIService
+metadata:
+  name: v1alpha1.admission.stash.appscode.com
+  labels:
+    chart: "stash-0.5.3"
+    app: "stash"
+    heritage: "Tiller"
+    release: "piquant-orangutan"
+spec:
+  group: admission.stash.appscode.com
+  version: v1alpha1
+  service:
+    namespace: default
+    name: piquant-orangutan-stash
+  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwemRtTXQKWTJGMExXTmhNQjRYRFRFNE1EWXdNakl5TURBek5Wb1hEVEk0TURVek1ESXlNREF6TlZvd0ZURVRNQkVHQTFVRQpBeE1LYzNaakxXTmhkQzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTjJECm1EYU82bGF2NmpYU2NBdjB3Y21FU2JXbjZwTlBBVW03amZkWU95Y3FtU3FxT1J3Ky82UkVueFprRkVBS3pncEEKdkp2SFZubDh5TU9YclA4MGYxc0VUcGZyNjRuMFc3MStUbFdTblQxU3d1aUJSZURSQ3BLZldud2w1eWc4czJnQQpiUWU4SWhXNDFXZEZVc3FXS0Q4MmxBL1VGSWluUTltbjlNZFU4Q1k4MmNuL1A3cnNkNW5LemhQZGoya3JUNlFaCjBFakN1U3lmeW9Wc29rSTdNVE5MUkl2NjRuS3dodXU2R0lLOWQ2Nms2NzREU3hudG0ybmZqV1ZvZHY2SGZmbE0KSS9OMENhQW1EVXBXazRtb2FPUGxTRXZ6Y3ZIU3NGNFJQbjVjeUdnbzIvSHNoVStrZEsvUEpsSWw0MlhUdlpENApLYk13KzJZd3lOTE1WTkNnUTNFQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUIwR0ExVWRKUVFXCk1CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC9NQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBTFhveFVUZ2F6RlRZRVpFRHdUTE1FVWRFYmJlK3JXMmhqei91Z1dpdWxhYXhLa1dnQQpNOEFoSFUxWWxBUGtNTlduM09UN3pJMjdXNHpURkxHMTUwRXFOTXJpUkQzcmlWTW5kWStXbVk5d0FWc0hKZE9hClFpempvMGNxYUxwR0h6MWpTQXpNS1FXVmxqVEJIeHBZMUx1cENlK2ZpMHFoWVR5NmNjbjZBUVh4ZGlLeExtYkwKUGZ3MHJ4bExReE1zOEFvN2c4SnVCaTQ0a0Y2SjBRbkRCdnVEMjBGSlIrWmRHTkRiVGdLK3VPU1VJNlh6eS9CSgpsc3puNlVpenpEOVhMWldwUGwzRkx4SmlLQWJFOWdnZFpWOEdBWGlxZ2tnTWVHSzhzNGpvb1JYYVprYTBUNG5BCngwM09BbjZmU3RQbVB5a0RRTmtTYThrdjNENCs3QmlTeTYxdQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  groupPriorityMinimum: 10000
+  versionPriority: 15

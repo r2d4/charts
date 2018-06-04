@@ -1,0 +1,600 @@
+[debug] Created tunnel using local port: '37293'
+
+[debug] SERVER: "127.0.0.1:37293"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/elasticsearch
+
+NAME:   wonderful-ant
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:57 2018
+CHART: elasticsearch-0.4.9
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+appVersion: "5.4"
+client:
+  antiAffinity: soft
+  heapSize: 512m
+  name: client
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 25m
+      memory: 512Mi
+  serviceType: ClusterIP
+cluster:
+  config: null
+  env:
+    MINIMUM_MASTER_NODES: "2"
+  name: elasticsearch
+data:
+  antiAffinity: soft
+  exposeHttp: false
+  heapSize: 1536m
+  name: data
+  persistence:
+    accessMode: ReadWriteOnce
+    enabled: true
+    name: data
+    size: 30Gi
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 25m
+      memory: 1536Mi
+  terminationGracePeriodSeconds: 3600
+image:
+  pullPolicy: IfNotPresent
+  repository: centerforopenscience/elasticsearch
+  tag: "5.4"
+master:
+  antiAffinity: soft
+  exposeHttp: false
+  heapSize: 512m
+  name: master
+  persistence:
+    accessMode: ReadWriteOnce
+    enabled: true
+    name: data
+    size: 4Gi
+  replicas: 3
+  resources:
+    limits:
+      cpu: "1"
+    requests:
+      cpu: 25m
+      memory: 512Mi
+rbac:
+  create: false
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: elasticsearch/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wonderful-ant-elasticsearch
+  labels:
+    app: wonderful-ant-elasticsearch
+    chart: "elasticsearch-0.4.9"
+    release: "wonderful-ant"
+    heritage: "Tiller"
+data:
+  elasticsearch.yml: |-
+    cluster.name: elasticsearch
+    
+    node.data: ${NODE_DATA:true}
+    node.master: ${NODE_MASTER:true}
+    node.ingest: ${NODE_INGEST:true}
+    node.name: ${HOSTNAME}
+
+    network.host: 0.0.0.0
+
+    cloud:
+      kubernetes:
+        service: ${SERVICE}
+        namespace: ${KUBERNETES_NAMESPACE}
+    # see https://github.com/kubernetes/kubernetes/issues/3595
+    bootstrap.memory_lock: ${BOOTSTRAP_MEMORY_LOCK:false}
+
+    discovery:
+      zen:
+        hosts_provider: kubernetes
+        minimum_master_nodes: ${MINIMUM_MASTER_NODES:2}
+
+    # see https://www.elastic.co/guide/en/x-pack/current/xpack-settings.html
+    xpack.ml.enabled: ${XPACK_ML_ENABLED:false}
+    xpack.monitoring.enabled: ${XPACK_MONITORING_ENABLED:false}
+    xpack.security.enabled: ${XPACK_SECURITY_ENABLED:false}
+    xpack.watcher.enabled: ${XPACK_WATCHER_ENABLED:false}
+
+    # see https://github.com/elastic/elasticsearch-definitive-guide/pull/679
+    processors: ${PROCESSORS:}
+
+    # avoid split-brain w/ a minimum consensus of two masters plus a data node
+    gateway.expected_master_nodes: ${EXPECTED_MASTER_NODES:2}
+    gateway.expected_data_nodes: ${EXPECTED_DATA_NODES:1}
+    gateway.recover_after_time: ${RECOVER_AFTER_TIME:5m}
+    gateway.recover_after_master_nodes: ${RECOVER_AFTER_MASTER_NODES:2}
+    gateway.recover_after_data_nodes: ${RECOVER_AFTER_DATA_NODES:1}
+  log4j2.properties: |-
+    status = error
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] %marker%m%n
+    rootLogger.level = info
+    rootLogger.appenderRef.console.ref = console
+    logger.searchguard.name = com.floragunn
+    logger.searchguard.level = info
+  pre-stop-hook.sh: |-
+    #!/bin/bash
+    set -e
+
+    SERVICE_ACCOUNT_PATH=/var/run/secrets/kubernetes.io/serviceaccount
+    KUBE_TOKEN=$(<${SERVICE_ACCOUNT_PATH}/token)
+    KUBE_NAMESPACE=$(<${SERVICE_ACCOUNT_PATH}/namespace)
+
+    STATEFULSET_NAME=$(echo "${HOSTNAME}" | sed 's/-[0-9]*$//g')
+    INSTANCE_ID=$(echo "${HOSTNAME}" | grep -o '[0-9]*$')
+
+    echo "Prepare stopping of Pet ${KUBE_NAMESPACE}/${HOSTNAME} of StatefulSet ${KUBE_NAMESPACE}/${STATEFULSET_NAME} instance_id ${INSTANCE_ID}"
+
+    INSTANCES_DESIRED=$(curl -s \
+      --cacert ${SERVICE_ACCOUNT_PATH}/ca.crt \
+      -H "Authorization: Bearer $KUBE_TOKEN" \
+      "https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_PORT_443_TCP_PORT}/apis/apps/v1beta1/namespaces/${KUBE_NAMESPACE}/statefulsets/${STATEFULSET_NAME}/status" | jq -r '.spec.replicas')
+
+    echo "Desired instance count is ${INSTANCES_DESIRED}"
+
+    if [ "${INSTANCE_ID}" -lt "${INSTANCES_DESIRED}" ]; then
+      echo "No data migration needed"
+      exit 0
+    fi
+
+    echo "Prepare to migrate data of the node"
+
+    NODE_STATS=$(curl -s -XGET 'http://localhost:9200/_nodes/stats')
+    NODE_IP=$(echo "${NODE_STATS}" | jq -r ".nodes[] | select(.name==\"${HOSTNAME}\") | .host")
+
+    echo "Move all data from node ${NODE_IP}"
+
+    curl -s -XPUT localhost:9200/_cluster/settings -d "{
+      \"transient\" :{
+          \"cluster.routing.allocation.exclude._ip\" : \"${NODE_IP}\"
+      }
+    }"
+    echo
+
+    echo "Wait for node to become empty"
+    DOC_COUNT=$(echo "${NODE_STATS}" | jq ".nodes[] | select(.name==\"${HOSTNAME}\") | .indices.docs.count")
+    while [ "${DOC_COUNT}" -gt 0 ]; do
+      NODE_STATS=$(curl -s -XGET 'http://localhost:9200/_nodes/stats')
+      DOC_COUNT=$(echo "${NODE_STATS}" | jq -r ".nodes[] | select(.name==\"${HOSTNAME}\") | .indices.docs.count")
+      echo "Node contains ${DOC_COUNT} documents"
+      sleep 1
+    done
+
+    echo "Wait for node shards to become empty"
+    SHARD_STATS=$(curl -s -XGET 'http://localhost:9200/_cat/shards?format=json')
+    SHARD_COUNT=$(echo "${SHARD_STATS}" | jq "[.[] | select(.node==\"${HOSTNAME}\")] | length")
+    while [ "${SHARD_COUNT}" -gt 0 ]; do
+      SHARD_STATS=$(curl -s -XGET 'http://localhost:9200/_cat/shards?format=json')
+      SHARD_COUNT=$(echo "${SHARD_STATS}" | jq "[.[] | select(.node==\"${HOSTNAME}\")] | length")
+      echo "Node contains ${SHARD_COUNT} shards"
+      sleep 1
+    done
+
+    echo "Node clear to shutdown"
+---
+# Source: elasticsearch/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: elasticsearch
+    chart: elasticsearch-0.4.9
+    heritage: Tiller
+    release: wonderful-ant
+  name: wonderful-ant-elasticsearch
+---
+# Source: elasticsearch/templates/client-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: elasticsearch
+    chart: elasticsearch-0.4.9
+    component: "client"
+    heritage: Tiller
+    release: wonderful-ant
+  name: wonderful-ant-elasticsearch-client
+
+spec:
+  ports:
+    - name: http
+      port: 9200
+      targetPort: http
+    - name: transport
+      port: 9300
+      targetPort: transport
+  selector:
+    app: elasticsearch
+    component: "client"
+    release: wonderful-ant
+  type: ClusterIP
+---
+# Source: elasticsearch/templates/master-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: elasticsearch
+    chart: elasticsearch-0.4.9
+    component: "master"
+    heritage: Tiller
+    release: wonderful-ant
+  name: wonderful-ant-elasticsearch-master
+spec:
+  clusterIP: None
+  ports:
+    - port: 9300
+      targetPort: transport
+  selector:
+    app: elasticsearch
+    component: "master"
+    release: wonderful-ant
+---
+# Source: elasticsearch/templates/client-deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: elasticsearch
+    chart: elasticsearch-0.4.9
+    component: "client"
+    heritage: Tiller
+    release: wonderful-ant
+  name: wonderful-ant-elasticsearch-client
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        component: "client"
+        release: wonderful-ant
+    spec:
+      serviceAccountName: wonderful-ant-elasticsearch
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: "elasticsearch"
+                  release: "wonderful-ant"
+                  component: "client"
+      initContainers:
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+      # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
+      - name: "sysctl"
+        image: "busybox"
+        imagePullPolicy: "Always"
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      containers:
+      - name: elasticsearch
+        env:
+        - name: SERVICE
+          value: wonderful-ant-elasticsearch-master
+        - name: KUBERNETES_MASTER
+          value: kubernetes.default.svc.cluster.local
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_DATA
+          value: "false"
+        - name: NODE_INGEST
+          value: "false"
+        - name: NODE_MASTER
+          value: "false"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: ES_JAVA_OPTS
+          value: "-Djava.net.preferIPv4Stack=true -Xms512m -Xmx512m"
+        - name: MINIMUM_MASTER_NODES
+          value: "2"
+        resources:
+            limits:
+              cpu: "1"
+            requests:
+              cpu: 25m
+              memory: 512Mi
+            
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health?wait_for_status=yellow
+            port: 9200
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health?wait_for_status=yellow
+            port: 9200
+          initialDelaySeconds: 90
+        image: "centerforopenscience/elasticsearch:5.4"
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: config
+          subPath: elasticsearch.yml
+        - mountPath: /usr/share/elasticsearch/config/log4j2.properties
+          name: config
+          subPath: log4j2.properties
+      volumes:
+      - name: config
+        configMap:
+          name: wonderful-ant-elasticsearch
+---
+# Source: elasticsearch/templates/data-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+    app: elasticsearch
+    chart: elasticsearch-0.4.9
+    component: "data"
+    heritage: Tiller
+    release: wonderful-ant
+  name: wonderful-ant-elasticsearch-data
+spec:
+  serviceName: wonderful-ant-elasticsearch-data
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        component: "data"
+        release: wonderful-ant
+    spec:
+      serviceAccountName: wonderful-ant-elasticsearch
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: "elasticsearch"
+                  release: "wonderful-ant"
+                  component: "data"
+      initContainers:
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+      # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
+      - name: "sysctl"
+        image: "busybox"
+        imagePullPolicy: "Always"
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      - name: "chown"
+        image: "centerforopenscience/elasticsearch:5.4"
+        imagePullPolicy: "IfNotPresent"
+        command:
+        - /bin/bash
+        - -c
+        - chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/data &&
+          chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/logs
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+      containers:
+      - name: elasticsearch
+        env:
+        - name: SERVICE
+          value: wonderful-ant-elasticsearch-master
+        - name: KUBERNETES_MASTER
+          value: kubernetes.default.svc.cluster.local
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_MASTER
+          value: "false"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: ES_JAVA_OPTS
+          value: "-Djava.net.preferIPv4Stack=true -Xms1536m -Xmx1536m"
+        - name: MINIMUM_MASTER_NODES
+          value: "2"
+        image: "centerforopenscience/elasticsearch:5.4"
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 9300
+          name: transport
+
+        resources:
+            limits:
+              cpu: "1"
+            requests:
+              cpu: 25m
+              memory: 1536Mi
+            
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health?local=true
+            port: 9200
+          initialDelaySeconds: 5
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: config
+          subPath: elasticsearch.yml
+        - mountPath: /usr/share/elasticsearch/config/log4j2.properties
+          name: config
+          subPath: log4j2.properties
+        - name: config
+          mountPath: /pre-stop-hook.sh
+          subPath: pre-stop-hook.sh
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/bash","/pre-stop-hook.sh"]
+      terminationGracePeriodSeconds: 3600
+      volumes:
+      - name: config
+        configMap:
+          name: wonderful-ant-elasticsearch
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "30Gi"
+---
+# Source: elasticsearch/templates/master-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+    app: elasticsearch
+    chart: elasticsearch-0.4.9
+    component: "master"
+    heritage: Tiller
+    release: wonderful-ant
+  name: wonderful-ant-elasticsearch-master
+spec:
+  serviceName: wonderful-ant-elasticsearch-master
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        component: "master"
+        release: wonderful-ant
+    spec:
+      serviceAccountName: wonderful-ant-elasticsearch
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: "elasticsearch"
+                  release: "wonderful-ant"
+                  component: "master"
+      initContainers:
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+      # and https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration-memory.html#mlockall
+      - name: "sysctl"
+        image: "busybox"
+        imagePullPolicy: "Always"
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      - name: "chown"
+        image: "centerforopenscience/elasticsearch:5.4"
+        imagePullPolicy: "IfNotPresent"
+        command:
+        - /bin/bash
+        - -c
+        - chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/data &&
+          chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/logs
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+      containers:
+      - name: elasticsearch
+        env:
+        - name: SERVICE
+          value: wonderful-ant-elasticsearch-master
+        - name: KUBERNETES_MASTER
+          value: kubernetes.default.svc.cluster.local
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_DATA
+          value: "false"
+        - name: NODE_INGEST
+          value: "false"
+        - name: PROCESSORS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: ES_JAVA_OPTS
+          value: "-Djava.net.preferIPv4Stack=true -Xms512m -Xmx512m"
+        - name: MINIMUM_MASTER_NODES
+          value: "2"
+        resources:
+            limits:
+              cpu: "1"
+            requests:
+              cpu: 25m
+              memory: 512Mi
+            
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health?local=true
+            port: 9200
+          initialDelaySeconds: 5
+        image: "centerforopenscience/elasticsearch:5.4"
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 9300
+          name: transport
+
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: config
+          subPath: elasticsearch.yml
+        - mountPath: /usr/share/elasticsearch/config/log4j2.properties
+          name: config
+          subPath: log4j2.properties
+      volumes:
+      - name: config
+        configMap:
+          name: wonderful-ant-elasticsearch
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "4Gi"

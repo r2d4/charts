@@ -1,0 +1,106 @@
+[debug] Created tunnel using local port: '37053'
+
+[debug] SERVER: "127.0.0.1:37053"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/schema-registry-ui
+
+NAME:   muddled-wildebeest
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:33 2018
+CHART: schema-registry-ui-0.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: landoop/schema-registry-ui
+  tag: 0.9.4
+ingress:
+  annotations: {}
+  enabled: false
+  hosts:
+  - schema-registry-ui.local
+  path: /
+  tls: []
+nodeSelector: {}
+replicaCount: 1
+resources: {}
+schemaRegistry:
+  port: 8081
+  url: http://localhost
+service:
+  port: 80
+  type: LoadBalancer
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: schema-registry-ui/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: muddled-wildebeest-schema-registry-ui
+  labels:
+    app: schema-registry-ui
+    chart: schema-registry-ui-0.1.0
+    release: muddled-wildebeest
+    heritage: Tiller
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: schema-registry-ui
+    release: muddled-wildebeest
+---
+# Source: schema-registry-ui/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: muddled-wildebeest-schema-registry-ui
+  labels:
+    app: schema-registry-ui
+    chart: schema-registry-ui-0.1.0
+    release: muddled-wildebeest
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: schema-registry-ui
+      release: muddled-wildebeest
+  template:
+    metadata:
+      labels:
+        app: schema-registry-ui
+        release: muddled-wildebeest
+    spec:
+      containers:
+        - name: schema-registry-ui
+          image: "landoop/schema-registry-ui:0.9.4"
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: SCHEMAREGISTRY_URL
+            value: "http://localhost:8081"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}

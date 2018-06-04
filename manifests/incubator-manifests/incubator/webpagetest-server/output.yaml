@@ -1,0 +1,145 @@
+[debug] Created tunnel using local port: '44909'
+
+[debug] SERVER: "127.0.0.1:44909"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/webpagetest-server
+
+NAME:   fuzzy-fish
+REVISION: 1
+RELEASED: Sat Jun  2 14:59:02 2018
+CHART: webpagetest-server-0.1.5
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+agentIngress:
+  annotations: null
+  enabled: false
+  hosts:
+  - agent-web-page-test.local
+  tls:
+  - hosts:
+    - agent-web-page-test.local
+    secretName: agent-web-page-test.local-tls
+ec2Locations:
+  customUserDataSecret: false
+  enabled: false
+  userData:
+    EC2.default: eu-west-1
+    ec2_key: ""
+    ec2_secret: ""
+    headless: 0
+image:
+  pullPolicy: IfNotPresent
+  repository: timothyclarke/wptserver
+  tag: 2018-01-12
+ingress:
+  annotations: null
+  enabled: false
+  hosts:
+  - web-page-test.local
+  tls:
+  - hosts:
+    - web-page-test.local
+    secretName: web-page-test.local-tls
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: true
+  size: 10Gi
+replicaCount: 1
+resources: {}
+service:
+  externalPort: 80
+  internalPort: 80
+  name: webpagetest-server
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: webpagetest-server/templates/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: fuzzy-fish-webpagetest-server
+  labels:
+    app: fuzzy-fish-webpagetest-server
+    chart: "webpagetest-server-0.1.5"
+    release: "fuzzy-fish"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "10Gi"
+---
+# Source: webpagetest-server/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: fuzzy-fish-webpagetest-server
+  labels:
+    app: webpagetest-server
+    chart: webpagetest-server-0.1.5
+    release: fuzzy-fish
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: webpagetest-server
+  selector:
+    app: webpagetest-server
+    release: fuzzy-fish
+---
+# Source: webpagetest-server/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: fuzzy-fish-webpagetest-server
+  labels:
+    app: webpagetest-server
+    chart: webpagetest-server-0.1.5
+    release: fuzzy-fish
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webpagetest-server
+  template:
+    metadata:
+      labels:
+        app: webpagetest-server
+        release: fuzzy-fish
+    spec:
+      containers:
+        - name: webpagetest-server
+          image: "timothyclarke/wptserver:2018-01-12"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+          resources:
+            {}
+            
+          env:
+          volumeMounts:
+          - name: wpt-local-archive
+            mountPath: /data/archive
+      volumes:
+      - name: wpt-local-archive
+        persistentVolumeClaim:
+          claimName: fuzzy-fish-webpagetest-server

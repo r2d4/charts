@@ -1,0 +1,217 @@
+[debug] Created tunnel using local port: '36431'
+
+[debug] SERVER: "127.0.0.1:36431"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/superset
+
+NAME:   exiled-peahen
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:36 2018
+CHART: superset-0.1.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+configFile: |-
+  #---------------------------------------------------------
+  # Superset specific config
+  #---------------------------------------------------------
+  ROW_LIMIT = 5000
+  SUPERSET_WORKERS = 2
+
+  SUPERSET_WEBSERVER_PORT = 8088
+  #---------------------------------------------------------
+
+  #---------------------------------------------------------
+  # Flask App Builder configuration
+  #---------------------------------------------------------
+  # Your App secret key
+  SECRET_KEY = '\2\1thisismyscretkey\1\2\e\y\y\h'
+
+  # The SQLAlchemy connection string to your database backend
+  # This connection defines the path to the database that stores your
+  # superset metadata (slices, connections, tables, dashboards, ...).
+  # Note that the connection information to connect to the datasources
+  # you want to explore are managed directly in the web UI
+  SQLALCHEMY_DATABASE_URI = 'sqlite:////var/lib/superset/superset.db'
+
+
+  # Flask-WTF flag for CSRF
+  WTF_CSRF_ENABLED = True
+  # Add endpoints that need to be exempt from CSRF protection
+  WTF_CSRF_EXEMPT_LIST = []
+
+  # Set this API key to enable Mapbox visualizations
+  MAPBOX_API_KEY = ''
+extraEnv: {}
+extraEnvFromSecret: ""
+image:
+  pullPolicy: IfNotPresent
+  repository: amancevice/superset
+  tag: 0.24.0
+ingress:
+  annotations: {}
+  enabled: false
+  hosts:
+  - superset.domain.com
+  path: /
+  tls: []
+initFile: |-
+  /usr/local/bin/superset-init --username admin --firstname admin --lastname user --email admin@fab.org --password admin
+  superset runserver
+livenessProbe:
+  failureThreshold: 2
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 80
+  periodSeconds: 10
+  timeoutSeconds: 5
+nodeSelector: {}
+persistence:
+  accessModes:
+  - ReadWriteOnce
+  enabled: false
+  existingClaim: ""
+  size: 8Gi
+readinessProbe:
+  failureThreshold: 2
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+replicaCount: 1
+resources: {}
+service:
+  port: 9000
+  type: ClusterIP
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: superset/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: exiled-peahen-superset
+  labels:
+    app: superset
+    chart: superset-0.1.2
+    release: exiled-peahen
+    heritage: Tiller
+type: Opaque
+data:
+  init_superset.sh: "L3Vzci9sb2NhbC9iaW4vc3VwZXJzZXQtaW5pdCAtLXVzZXJuYW1lIGFkbWluIC0tZmlyc3RuYW1lIGFkbWluIC0tbGFzdG5hbWUgdXNlciAtLWVtYWlsIGFkbWluQGZhYi5vcmcgLS1wYXNzd29yZCBhZG1pbgpzdXBlcnNldCBydW5zZXJ2ZXI="
+---
+# Source: superset/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: exiled-peahen-superset
+  labels:
+    app: superset
+    chart: superset-0.1.2
+    release: exiled-peahen
+    heritage: Tiller
+data:
+  superset_config.py: "#---------------------------------------------------------\n# Superset specific config\n#---------------------------------------------------------\nROW_LIMIT = 5000\nSUPERSET_WORKERS = 2\n\nSUPERSET_WEBSERVER_PORT = 8088\n#---------------------------------------------------------\n\n#---------------------------------------------------------\n# Flask App Builder configuration\n#---------------------------------------------------------\n# Your App secret key\nSECRET_KEY = '\\2\\1thisismyscretkey\\1\\2\\e\\y\\y\\h'\n\n# The SQLAlchemy connection string to your database backend\n# This connection defines the path to the database that stores your\n# superset metadata (slices, connections, tables, dashboards, ...).\n# Note that the connection information to connect to the datasources\n# you want to explore are managed directly in the web UI\nSQLALCHEMY_DATABASE_URI = 'sqlite:////var/lib/superset/superset.db'\n\n\n# Flask-WTF flag for CSRF\nWTF_CSRF_ENABLED = True\n# Add endpoints that need to be exempt from CSRF protection\nWTF_CSRF_EXEMPT_LIST = []\n\n# Set this API key to enable Mapbox visualizations\nMAPBOX_API_KEY = ''"
+---
+# Source: superset/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: exiled-peahen-superset
+  labels:
+    app: superset
+    chart: superset-0.1.2
+    release: exiled-peahen
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9000
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: superset
+    release: exiled-peahen
+---
+# Source: superset/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exiled-peahen-superset
+  labels:
+    app: superset
+    chart: superset-0.1.2
+    release: exiled-peahen
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: superset
+      release: exiled-peahen
+  template:
+    metadata:
+      name: exiled-peahen-superset
+      labels:
+        app: superset
+        chart: superset-0.1.2
+        release: exiled-peahen
+        heritage: Tiller
+    spec:
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      volumes:
+        - name: superset-init
+          secret:
+            secretName: exiled-peahen-superset
+        - name: superset-server-config
+          configMap:
+            name: exiled-peahen-superset
+        - name: storage-volume
+          emptyDir: {}
+      containers:
+        - name: superset
+          image: "amancevice/superset:0.24.0"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash"]
+          args: ["/home/superset/init_superset.sh" ]
+          volumeMounts:
+            - name: superset-init
+              mountPath: /home/superset
+            - name: superset-server-config
+              mountPath: /etc/superset
+            - name: storage-volume
+              mountPath: /var/lib/superset
+          ports:
+            - name: http
+              containerPort: 8088
+              protocol: TCP
+          env:
+          livenessProbe:
+            failureThreshold: 2
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 80
+            periodSeconds: 10
+            timeoutSeconds: 5
+            
+          readinessProbe:
+            failureThreshold: 2
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5

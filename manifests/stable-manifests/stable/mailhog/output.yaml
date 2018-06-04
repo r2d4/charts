@@ -1,0 +1,121 @@
+[debug] Created tunnel using local port: '39877'
+
+[debug] SERVER: "127.0.0.1:39877"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/mailhog
+
+NAME:   broken-sloth
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:24 2018
+CHART: mailhog-2.2.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+auth:
+  enabled: false
+  existingSecret: ""
+  fileContents: ""
+  fileName: auth.txt
+env: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: mailhog/mailhog
+  tag: v1.0.0
+ingress:
+  annotations: {}
+  enabled: false
+  hosts:
+  - mailhog.example.com
+  path: /
+  tls: []
+podAnnotations: {}
+resources: {}
+service:
+  annotations: {}
+  clusterIP: ""
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  nodePort:
+    http: ""
+    smtp: ""
+  port:
+    http: 8025
+    smtp: 1025
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: mailhog/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mailhog
+    chart: mailhog-2.2.0
+    heritage: Tiller
+    release: broken-sloth
+  name: broken-sloth-mailhog
+spec:
+  type: "ClusterIP"
+  clusterIP: ""
+  ports:
+    - name: http
+      port: 8025
+      protocol: TCP
+      targetPort: http
+    - name: smtp
+      port: 1025
+      protocol: TCP
+      targetPort: smtp
+  selector:
+    app: mailhog
+    release: broken-sloth
+---
+# Source: mailhog/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: mailhog
+    chart: mailhog-2.2.0
+    heritage: Tiller
+    release: broken-sloth
+  name: broken-sloth-mailhog
+spec:
+  template:
+    metadata:
+      labels:
+        app: mailhog
+        release: broken-sloth
+    spec:
+      containers:
+        - name: mailhog
+          image: "mailhog/mailhog:v1.0.0"
+          imagePullPolicy: "IfNotPresent"
+          env:
+            - name: MH_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: http
+              containerPort: 8025
+              protocol: TCP
+            - name: smtp
+              containerPort: 1025
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+          resources:
+            {}

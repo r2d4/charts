@@ -1,0 +1,148 @@
+
+---
+# Source: unbound/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zooming-blackbird-unbound
+  labels:
+    app: unbound
+    chart: unbound-0.1.2
+    release: zooming-blackbird
+    heritage: Tiller
+data:
+  unbound.conf: |-
+    server:
+        chroot: ""
+        num-threads: 1
+        directory: "/etc/unbound"
+        port: 53
+        so-reuseport: yes
+        do-daemonize: no
+        logfile: ""
+        use-syslog: no
+        auto-trust-anchor-file: "/var/lib/unbound/root.key"
+        verbosity: 1
+        statistics-interval: 0
+        statistics-cumulative: no
+
+        interface: 127.0.0.1
+        interface: 0.0.0.0
+
+        access-control: 127.0.0.1/32 allow
+
+        local-data: "health.check.unbound A 127.0.0.1"
+        local-data-ptr: "127.0.0.1 health.check.unbound"
+---
+# Source: unbound/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: zooming-blackbird-unbound
+  labels:
+    app: unbound
+    chart: unbound-0.1.2
+    release: zooming-blackbird
+    heritage: Tiller
+spec:
+  selector:
+    app: unbound
+    release: zooming-blackbird
+  ports:
+  - name: dns-udp
+    protocol: UDP
+    port: 53
+    targetPort: dns-udp
+  - name: dns-tcp
+    protocol: TCP
+    port: 53
+    targetPort: dns-tcp
+---
+# Source: unbound/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: zooming-blackbird-unbound
+  labels:
+    app: unbound
+    chart: unbound-0.1.2
+    release: zooming-blackbird
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unbound
+      release: zooming-blackbird
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        chart: unbound-0.1.2
+        app: unbound
+        heritage: Tiller
+        release: zooming-blackbird
+      annotations:
+        checksum/config: d27fe9a9ebe68940cec01ee719d230e9a7194e9bcded7adbb8a09d42efdc4915
+    spec:
+      containers:
+      - name: "unbound"
+        image: markbnj/unbound-docker:0.1.0
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - name: "dns-udp"
+          containerPort: 53
+          protocol: "UDP"
+        - name: "dns-tcp"
+          containerPort: 53
+          protocol: "TCP"
+        volumeMounts:
+        - name: "unbound-conf"
+          mountPath: "/etc/unbound/"
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: "/healthz"
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+        readinessProbe:
+          httpGet:
+            path: "/healthz"
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+      - name: "healthz"
+        image: googlecontainer/exechealthz:1.2
+        imagePullPolicy: "IfNotPresent"
+        args:
+          - "-cmd=nslookup health.check.unbound 127.0.0.1:53 > /dev/null"
+        ports:
+        - name: healthz
+          containerPort: 8080
+          protocol: TCP
+      volumes:
+      - name: "unbound-conf"
+        configMap:
+          name: zooming-blackbird-unbound
+---
+# Source: unbound/templates/disruption_budget.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: zooming-blackbird-unbound
+  labels:
+    app: unbound
+    chart: unbound-0.1.2
+    release: zooming-blackbird
+    heritage: Tiller
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: unbound
+      release: zooming-blackbird

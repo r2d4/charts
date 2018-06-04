@@ -1,0 +1,100 @@
+[debug] Created tunnel using local port: '43705'
+
+[debug] SERVER: "127.0.0.1:43705"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/prometheus-redis-exporter
+
+NAME:   ponderous-quetzal
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:31 2018
+CHART: prometheus-redis-exporter-0.1.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+annotations: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: oliver006/redis_exporter
+  tag: v0.16.0
+redisAddress: redis://myredis:6379
+replicaCount: 1
+resources: {}
+service:
+  annotations: {}
+  port: 9121
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: prometheus-redis-exporter/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ponderous-quetzal-prometheus-redis-exporter
+  labels:
+    app: prometheus-redis-exporter
+    chart: prometheus-redis-exporter-0.1.2
+    release: ponderous-quetzal
+    heritage: Tiller
+  annotations:
+    {}
+    
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9121
+      targetPort: exporter-port
+      protocol: TCP
+  selector:
+    app: prometheus-redis-exporter
+    release: ponderous-quetzal
+---
+# Source: prometheus-redis-exporter/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ponderous-quetzal-prometheus-redis-exporter
+  labels:
+    app: prometheus-redis-exporter
+    chart: prometheus-redis-exporter-0.1.2
+    release: ponderous-quetzal
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-redis-exporter
+      release: ponderous-quetzal
+  template:
+    metadata:
+      annotations:
+        {}
+        
+      labels:
+        app: prometheus-redis-exporter
+        release: ponderous-quetzal
+    spec:
+      containers:
+        - name: prometheus-redis-exporter
+          image: "oliver006/redis_exporter:v0.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: exporter-port
+              containerPort: 9121
+          env:
+            - name: REDIS_ADDR
+              value: redis://myredis:6379
+          livenessProbe:
+            httpGet:
+              path: /
+              port: exporter-port
+          readinessProbe:
+            httpGet:
+              path: /
+              port: exporter-port
+          resources:
+            {}

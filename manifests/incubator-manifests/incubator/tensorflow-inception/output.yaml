@@ -1,0 +1,94 @@
+[debug] Created tunnel using local port: '36397'
+
+[debug] SERVER: "127.0.0.1:36397"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/tensorflow-inception
+
+NAME:   morbid-zorse
+REVISION: 1
+RELEASED: Sat Jun  2 14:59:01 2018
+CHART: tensorflow-inception-0.3.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+component: tensorflow-inception
+containerPort: 9090
+image: quay.io/lachie83/inception_serving
+imagePullPolicy: IfNotPresent
+imageTag: latest
+replicas: 1
+resources: {}
+servicePort: 9090
+serviceType: LoadBalancer
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: tensorflow-inception/templates/tensorflow-inception.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: morbid-zorse-tensorflow
+  labels:
+    heritage: "Tiller"
+    release: "morbid-zorse"
+    chart: "tensorflow-inception-0.3.0"
+    component: "morbid-zorse-tensorflow-inception"
+  annotations:
+    "helm.sh/created": "1527976741"
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    component: "morbid-zorse-tensorflow-inception"
+  type: LoadBalancer
+---
+# Source: tensorflow-inception/templates/tensorflow-inception.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: morbid-zorse-tensorflow
+  labels:
+    heritage: "Tiller"
+    release: "morbid-zorse"
+    chart: "tensorflow-inception-0.3.0"
+    component: "morbid-zorse-tensorflow-inception"
+  annotations:
+    "helm.sh/created": "1527976741"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "morbid-zorse-tensorflow-inception"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "morbid-zorse"
+        chart: "tensorflow-inception-0.3.0"
+        component: "morbid-zorse-tensorflow-inception"
+    spec:
+      containers:
+        - name: morbid-zorse-tensorflow
+          image: "quay.io/lachie83/inception_serving:latest"
+          imagePullPolicy: "IfNotPresent"
+          command:
+          - "/bin/sh"
+          - "-c"
+          args:
+          - "/serving/bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server --port=9090 --model_name=inception --model_base_path=/serving/inception-export"
+          ports:
+            - containerPort: 9090
+          readinessProbe:
+            tcpSocket:
+              port: 9090
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+          resources:
+            {}

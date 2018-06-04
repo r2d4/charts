@@ -1,0 +1,115 @@
+
+---
+# Source: magic-namespace/templates/serviceaccounts.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: some-service-account
+  labels:
+    chart: magic-namespace-0.1.1
+    release: messy-coral
+    heritage: Tiller
+---
+# Source: magic-namespace/templates/serviceaccounts.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: another-service-account
+  labels:
+    chart: magic-namespace-0.1.1
+    release: messy-coral
+    heritage: Tiller
+---
+# Source: magic-namespace/templates/tiller-serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tiller
+  labels:
+    app: helm
+    name: tiller
+    chart: magic-namespace-0.1.1
+    release: messy-coral
+    heritage: Tiller
+---
+# Source: magic-namespace/templates/tiller-rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tiller-admin
+  labels:
+    app: helm
+    name: tiller
+    chart: magic-namespace-0.1.1
+    release: messy-coral
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+- kind: ServiceAccount
+  name: tiller
+  namespace: default
+---
+# Source: magic-namespace/templates/tiller-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tiller-deploy
+  labels:
+    app: helm
+    name: tiller
+    chart: magic-namespace-0.1.1
+    release: messy-coral
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helm
+      name: tiller
+      release: messy-coral
+  template:
+    metadata:
+      labels:
+        app: helm
+        name: tiller
+        chart: magic-namespace-0.1.1
+        release: messy-coral
+        heritage: Tiller
+    spec:
+      serviceAccountName: tiller
+      containers:
+        - name: magic-namespace
+          image: "gcr.io/kubernetes-helm/tiller:v2.8.1"
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: TILLER_NAMESPACE
+            value: default
+          - name: TILLER_HISTORY_MAX
+            value: "0"
+          command: ["/tiller"]
+          args: ["--listen=localhost:44134"]
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /liveness
+              port: 44135
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /readiness
+              port: 44135
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            {}

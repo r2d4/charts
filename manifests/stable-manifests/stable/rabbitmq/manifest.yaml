@@ -1,0 +1,232 @@
+
+---
+# Source: rabbitmq/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: angry-owl-rabbitmq
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+type: Opaque
+data:
+  
+  rabbitmq-password: "Uko5N1dRTkhzcw=="
+  
+  
+  rabbitmq-erlang-cookie: "dXVYc2ZWaXpJdUkwSTRuaUxWdzNOS3k2MTZkbXhiQlg="
+---
+# Source: rabbitmq/templates/configuration.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: angry-owl-rabbitmq-config
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+data:
+  enabled_plugins: |-
+    [rabbitmq_management, rabbitmq_peer_discovery_k8s].
+  rabbitmq.conf: |-
+    ##username and password
+    default_user=user
+    default_pass=CHANGEME
+    ## Clustering
+    cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
+    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+    cluster_formation.k8s.address_type = ip
+    cluster_formation.node_cleanup.interval = 10
+    cluster_formation.node_cleanup.only_log_warning = true
+    cluster_partition_handling = autoheal
+    ## queue master locator
+    queue_master_locator=min-masters
+    ## enable guest user
+    loopback_users.guest = false
+---
+# Source: rabbitmq/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: angry-owl-rabbitmq
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+---
+# Source: rabbitmq/templates/role.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: angry-owl-rabbitmq-endpoint-reader
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+rules:
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get"]
+---
+# Source: rabbitmq/templates/rolebinding.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: angry-owl-rabbitmq-endpoint-reader
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+subjects:
+- kind: ServiceAccount
+  name: angry-owl-rabbitmq
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: angry-owl-rabbitmq-endpoint-reader
+---
+# Source: rabbitmq/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: angry-owl-rabbitmq
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - name: epmd
+    port: 4369
+    targetPort: epmd
+  - name: amqp
+    port: 5672
+    targetPort: amqp
+  - name: dist
+    port: 25672
+    targetPort: dist
+  - name: stats
+    port: 15672
+    targetPort: stats
+  selector:
+    app: rabbitmq
+    release: "angry-owl"
+---
+# Source: rabbitmq/templates/statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: angry-owl-rabbitmq
+  labels:
+    app: rabbitmq
+    chart: rabbitmq-1.1.3
+    release: "angry-owl"
+    heritage: "Tiller"
+spec:
+  serviceName: angry-owl-rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+      release: "angry-owl"
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+        release: "angry-owl"
+    spec:
+      serviceAccountName: angry-owl-rabbitmq
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: angry-owl-rabbitmq
+        image: "docker.io/bitnami/rabbitmq:3.7.5"
+        imagePullPolicy: "IfNotPresent"
+        command:
+         - bash
+         - -ec
+         - |
+            #persist the erlang cookie in both places for server and cli tools
+            echo $RABBITMQ_ERL_COOKIE > /opt/bitnami/rabbitmq/var/lib/rabbitmq/.erlang.cookie
+            cp /opt/bitnami/rabbitmq/var/lib/rabbitmq/.erlang.cookie /root
+
+            #change permision so only the user has access to the cookie file
+            chmod 400 /root/.erlang.cookie
+            chmod 400 /opt/bitnami/rabbitmq/var/lib/rabbitmq/.erlang.cookie
+
+            #copy the mounted configuration to both places
+            cp  /opt/bitnami/rabbitmq/conf/* /opt/bitnami/rabbitmq/etc/rabbitmq
+
+            #replace the default password that is generated
+            sed -i "s/CHANGEME/$RABBITMQ_PASSWORD/g" /opt/bitnami/rabbitmq/etc/rabbitmq/rabbitmq.conf
+
+            exec rabbitmq-server
+        volumeMounts:
+          - name: config-volume
+            mountPath: /opt/bitnami/rabbitmq/conf
+          - name: data
+            mountPath: /opt/bitnami/rabbitmq/var/lib/rabbitmq/
+        ports:
+        - name: epmd
+          containerPort: 4369
+        - name: amqp
+          containerPort: 5672
+        - name: dist
+          containerPort: 25672
+        - name: stats
+          containerPort: 15672
+        livenessProbe:
+          exec:
+            command:
+            - rabbitmqctl
+            - status
+          initialDelaySeconds: 120
+          timeoutSeconds: 5
+          failureThreshold: 6
+        readinessProbe:
+          exec:
+            command:
+            - rabbitmqctl
+            - status
+          initialDelaySeconds: 10
+          timeoutSeconds: 3
+          periodSeconds: 5
+        env:
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: RABBITMQ_USE_LONGNAME
+            value: "true"
+          - name: RABBITMQ_NODENAME
+            value: "rabbit@$(MY_POD_IP)"
+          - name: K8S_SERVICE_NAME
+            value: "angry-owl-rabbitmq"
+          - name: RABBITMQ_ERL_COOKIE
+            valueFrom:
+              secretKeyRef:
+                name: angry-owl-rabbitmq
+                key: rabbitmq-erlang-cookie
+          - name: RABBITMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: angry-owl-rabbitmq
+                key: rabbitmq-password
+      volumes:
+        - name: config-volume
+          configMap:
+            name: angry-owl-rabbitmq-config
+            items:
+            - key: rabbitmq.conf
+              path: rabbitmq.conf
+            - key: enabled_plugins
+              path: enabled_plugins
+        - name: data
+          emptyDir: {}

@@ -1,0 +1,7 @@
+[debug] Created tunnel using local port: '38505'
+
+[debug] SERVER: "127.0.0.1:38505"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/luigi
+

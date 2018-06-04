@@ -1,0 +1,183 @@
+
+---
+# Source: spark/templates/spark-master-deployment.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: giggly-meerkat-master
+  labels:
+    heritage: "Tiller"
+    release: "giggly-meerkat"
+    chart: "spark-0.1.13"
+    component: "giggly-meerkat-spark-master"
+spec:
+  ports:
+    - port: 7077
+      targetPort: 7077
+  selector:
+    component: "giggly-meerkat-spark-master"
+---
+# Source: spark/templates/spark-master-deployment.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: giggly-meerkat-webui
+  labels:
+    heritage: "Tiller"
+    release: "giggly-meerkat"
+    chart: "spark-0.1.13"
+    component: "giggly-meerkat-spark-master"
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    component: "giggly-meerkat-spark-master"
+  type: LoadBalancer
+---
+# Source: spark/templates/spark-zeppelin-deployment.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: giggly-meerkat-zeppelin
+  labels:
+    heritage: "Tiller"
+    release: "giggly-meerkat"
+    chart: "spark-0.1.13"
+    component: "giggly-meerkat-zeppelin"
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    component: "giggly-meerkat-zeppelin"
+  type: LoadBalancer
+---
+# Source: spark/templates/spark-master-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: giggly-meerkat-master
+  labels:
+    heritage: "Tiller"
+    release: "giggly-meerkat"
+    chart: "spark-0.1.13"
+    component: "giggly-meerkat-spark-master"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "giggly-meerkat-spark-master"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "giggly-meerkat"
+        chart: "spark-0.1.13"
+        component: "giggly-meerkat-spark-master"
+    spec:
+      containers:
+        - name: giggly-meerkat-master
+          image: "k8s.gcr.io/spark:1.5.1_v3"
+          command: ["/bin/sh","-c"]
+          args: ["echo $(hostname -i) giggly-meerkat-master >> /etc/hosts; /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master"]
+          ports:
+            - containerPort: 7077
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+          env:
+          - name: SPARK_DAEMON_MEMORY
+            value: "1g"
+          - name: SPARK_MASTER_HOST
+            value: giggly-meerkat-master
+          - name: SPARK_MASTER_PORT
+            value: "7077"
+          - name: SPARK_MASTER_WEBUI_PORT
+            value: "8080"
+---
+# Source: spark/templates/spark-worker-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: giggly-meerkat-worker
+  labels:
+    heritage: "Tiller"
+    release: "giggly-meerkat"
+    chart: "spark-0.1.13"
+    component: "giggly-meerkat-spark-worker"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "giggly-meerkat-spark-worker"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "giggly-meerkat"
+        chart: "spark-0.1.13"
+        component: "giggly-meerkat-spark-worker"
+    spec:
+      containers:
+        - name: giggly-meerkat-worker
+          image: "k8s.gcr.io/spark:1.5.1_v3"
+          command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://giggly-meerkat-master:7077"]
+          ports:
+            - containerPort: 8081
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+          env:
+          - name: SPARK_DAEMON_MEMORY
+            value: "1g"
+          - name: SPARK_WORKER_MEMORY
+            value: "1g"
+          - name: SPARK_WORKER_WEBUI_PORT
+            value: "8080"
+---
+# Source: spark/templates/spark-zeppelin-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: giggly-meerkat-zeppelin
+  labels:
+    heritage: "Tiller"
+    release: "giggly-meerkat"
+    chart: "spark-0.1.13"
+    component: "giggly-meerkat-zeppelin"
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "giggly-meerkat-zeppelin"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "giggly-meerkat"
+        chart: "spark-0.1.13"
+        component: "giggly-meerkat-zeppelin"
+    spec:
+      containers:
+        - name: giggly-meerkat-zeppelin
+          image: "apache/zeppelin:0.7.3"
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: "100m"
+          env:
+            - name: SPARK_MASTER
+              value: "spark://giggly-meerkat-master:7077"

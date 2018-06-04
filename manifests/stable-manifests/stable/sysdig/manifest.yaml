@@ -1,0 +1,16 @@
+
+---
+# Source: sysdig/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: edgy-dog-sysdig
+  labels:
+    app: edgy-dog-sysdig
+    chart: "sysdig-0.4.1"
+    release: "edgy-dog"
+    heritage: "Tiller"
+type: Opaque
+data:
+ access-key : "TUlTU0lORw=="
+ tags : ""

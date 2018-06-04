@@ -1,0 +1,223 @@
+[debug] Created tunnel using local port: '46145'
+
+[debug] SERVER: "127.0.0.1:46145"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/nfs-server-provisioner
+
+NAME:   sweet-molly
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:27 2018
+CHART: nfs-server-provisioner-0.1.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: quay.io/kubernetes_incubator/nfs-provisioner
+  tag: v1.0.9
+nodeSelector: {}
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: false
+  size: 1Gi
+rbac:
+  create: true
+  serviceAccountName: default
+replicaCount: 1
+resources: {}
+service:
+  externalIPs: []
+  mountdPort: 20048
+  nfsPort: 2049
+  rpcbindPort: 51413
+  type: ClusterIP
+storageClass:
+  create: true
+  defaultClass: false
+  name: nfs
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: nfs-server-provisioner/templates/storageclass.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: nfs
+  labels:
+    app: nfs-server-provisioner
+    chart: nfs-server-provisioner-0.1.4
+    heritage: Tiller
+    release: sweet-molly
+provisioner: cluster.local/sweet-molly-nfs-server-provisioner
+---
+# Source: nfs-server-provisioner/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: nfs-server-provisioner
+    chart: nfs-server-provisioner-0.1.4
+    heritage: Tiller
+    release: sweet-molly
+  name: sweet-molly-nfs-server-provisioner
+---
+# Source: nfs-server-provisioner/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sweet-molly-nfs-server-provisioner
+  labels:
+    app: nfs-server-provisioner
+    chart: nfs-server-provisioner-0.1.4
+    heritage: Tiller
+    release: sweet-molly
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get"]
+  - apiGroups: ["extensions"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["nfs-provisioner"]
+    verbs: ["use"]
+---
+# Source: nfs-server-provisioner/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: nfs-server-provisioner
+    chart: nfs-server-provisioner-0.1.4
+    heritage: Tiller
+    release: sweet-molly
+  name: sweet-molly-nfs-server-provisioner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sweet-molly-nfs-server-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: sweet-molly-nfs-server-provisioner
+    namespace: default
+---
+# Source: nfs-server-provisioner/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sweet-molly-nfs-server-provisioner
+  labels:
+    app: nfs-server-provisioner
+    chart: nfs-server-provisioner-0.1.4
+    heritage: Tiller
+    release: sweet-molly
+spec:
+  type: ClusterIP
+  ports:
+    - port: 2049
+      targetPort: nfs
+      protocol: TCP
+      name: nfs
+    - port: 20048
+      targetPort: mountd
+      protocol: TCP
+      name: mountd
+    - port: 51413
+      targetPort: rpcbind-tcp
+      protocol: TCP
+      name: rpcbind-tcp
+    - port: 51413
+      targetPort: rpcbind-udp
+      protocol: UDP
+      name: rpcbind-udp
+  selector:
+    app: nfs-server-provisioner
+    release: sweet-molly
+---
+# Source: nfs-server-provisioner/templates/statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: sweet-molly-nfs-server-provisioner
+  labels:
+    app: nfs-server-provisioner
+    chart: nfs-server-provisioner-0.1.4
+    heritage: Tiller
+    release: sweet-molly
+spec:
+  # TODO: Investigate how/if nfs-provisioner can be scaled out beyond 1 replica
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-server-provisioner
+      release: sweet-molly
+  serviceName: sweet-molly-nfs-server-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-server-provisioner
+        chart: nfs-server-provisioner-0.1.4
+        heritage: Tiller
+        release: sweet-molly
+    spec:
+      # NOTE: This is 10 seconds longer than the default nfs-provisioner --grace-period value of 90sec
+      terminationGracePeriodSeconds: 100
+      serviceAccountName: sweet-molly-nfs-server-provisioner
+      containers:
+        - name: nfs-server-provisioner
+          image: "quay.io/kubernetes_incubator/nfs-provisioner:v1.0.9"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: nfs
+              containerPort: 2049
+              protocol: TCP
+            - name: mountd
+              containerPort: 20048
+              protocol: TCP
+            - name: rpcbind-tcp
+              containerPort: 111
+              protocol: TCP
+            - name: rpcbind-udp
+              containerPort: 111
+              protocol: UDP
+          securityContext:
+            capabilities:
+              add:
+                - DAC_READ_SEARCH
+                - SYS_RESOURCE
+          args:
+            - "-provisioner=cluster.local/sweet-molly-nfs-server-provisioner"
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SERVICE_NAME
+              value: sweet-molly-nfs-server-provisioner
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: data
+              mountPath: /export
+          resources:
+      volumes:
+        - name: data
+          emptyDir: {}

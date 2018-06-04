@@ -1,0 +1,319 @@
+
+---
+# Source: voyager/templates/apiregistration.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: voyager-sweet-cow-apiserver-cert
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+type: Opaque
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURNakNDQWhxZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwemRtTXQKWTJGMExXTmhNQjRYRFRFNE1EWXdNakl5TURBek9Gb1hEVEk0TURVek1ESXlNREF6T0Zvd0hERWFNQmdHQTFVRQpBeE1SZG05NVlXZGxjaTF6ZDJWbGRDMWpiM2N3Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUURFbmxNTk5YMlJJeHRQbGplTDdXV25WemFnL1ZHa2lXYk9Gb2JzYUR3dTI1cGhyOUlMTGRRNWFadUwKVC92bFdwV1JQWDFNL29Bc1hQbGs5ZWIvV2tNQ28wanNRVXpFMEtmREx1NUtlVG5QdzJZTjQ4SXhpNVBDVEVjTApqVXBKeXBCY0ZXakErYnFHcFFUVGovZlB4OFNXZExEVG50WDNlNFNvbVYzakwyRVcrZ1htajg2UFluR3pHK0pRCnI1L3RkZU0xbm5yOHhKSHJiYW1KeFFzQlI2OEJJcTFmeUIxV0tKWXRLNHhudmwrWHJvN3A5N1BVOS9nK2VtRk8KcVpnZmhLSERWYXpLczlmRy9wN1BrSXVrMUZJeEJCdzk4dXhKQzlHQ05KRDNpODBQWWVOY3BhTnUySGVBVWdaNQpsSU4wS255TFZZMTZyY3RvaXNlM0JpdWd5Uk56QWdNQkFBR2pnWVV3Z1lJd0RnWURWUjBQQVFIL0JBUURBZ1dnCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFNQmdOVkhSTUJBZjhFQWpBQU1FTUcKQTFVZEVRUThNRHFDR1hadmVXRm5aWEl0YzNkbFpYUXRZMjkzTG1SbFptRjFiSFNDSFhadmVXRm5aWEl0YzNkbApaWFF0WTI5M0xtUmxabUYxYkhRdWMzWmpNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUNVazhwM0RQMnBDVmUvCjNsVWcvdVFxNG5CUmdtNnNYY3hRRzJVZnV1VnZSVUw0clZvOWVVWTBHRzRwYXVxTHEyRkFsR2s2MkI5cThBU3QKNW9nOU5LNVRETTZwVzA0Rnp6b0dDOVZ6K2VvQ2NSMWwwOHNmREdwY0NHeW5EQjNOeXFEQlNqeWhVMUVhRU1SagpKU1I2K2FVNktlUTM0Tlh1TGN1NFc2RlRRNGpIMEkzMmJuazh1N2NxNXA4ZEZkVHluNlBObk9XQzRNK0FyU1lGCjRPVUIwRS9lYlB2KzFzVFJVL244QU94Zms5VWN5VitDMXMyRUhrRkdONzJuaUwrb3NKcGlndzdwUEJVMy9rSmMKanc0NENGK3lVV2x2V004aEdjWWE2TS9mQjVmcmZoallEd01xQ1hJbEhaMkdPMTVobVlXYVVlcGxCSkg5ZHQ2Vgp6ZmR5RFhCSQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBeEo1VERUVjlrU01iVDVZM2krMWxwMWMyb1AxUnBJbG16aGFHN0dnOEx0dWFZYS9TCkN5M1VPV21iaTAvNzVWcVZrVDE5VFA2QUxGejVaUFhtLzFwREFxTkk3RUZNeE5Dbnd5N3VTbms1ejhObURlUEMKTVl1VHdreEhDNDFLU2NxUVhCVm93UG02aHFVRTA0LzN6OGZFbG5TdzA1N1Y5M3VFcUpsZDR5OWhGdm9GNW8vTwpqMkp4c3h2aVVLK2Y3WFhqTlo1Ni9NU1I2MjJwaWNVTEFVZXZBU0t0WDhnZFZpaVdMU3VNWjc1Zmw2Nk82ZmV6CjFQZjRQbnBoVHFtWUg0U2h3MVdzeXJQWHh2NmV6NUNMcE5SU01RUWNQZkxzU1F2UmdqU1E5NHZORDJIalhLV2oKYnRoM2dGSUdlWlNEZENwOGkxV05lcTNMYUlySHR3WXJvTWtUY3dJREFRQUJBb0lCQUg3Qk92V0hDSDVxelk2UApYeHY4WGM1MThTZjBaNC9WYk10cnhtdmQvdjZPWUlhZG5LSE1WOGJ6aUcxVmtTVVpNdGRCZHVnT0luOTNLT2luCmh0WVVVS01BdFdCcDhKM3BqbDNNZ1o3TmJERyszS29UclB2WDZkZ1c2SzVQMWhhZ1dsU2pFTGRueDVKS0RFUi8KeWRqUUJyS2dZK2JwdlRNaEZETEZQTHZiclpIclZ6QWxuMnRFL2ZodzhGL0MyZ2ozYWhsVTVDa3N3UGxsUGJoNAo5Qm5Cb1hnczdmbDg2d2Z5WjNLWEVQUThHbVRRUzFIYzlZMGNQZ0NLd0tCR3pPNnBHQTEzRjdkRFdJbXlORWxNCk5NRFpseCtXWnJQK0UvOFJGcytmOFNyQWlYRGprdVpSWWV2Z0w1WVdjcEd0RzRLd3hIc2xwQTFxbnE5Wko3b2gKbmUvYldBRUNnWUVBOWFKYjQvc2lkWmd2UE9HNWJ6OGUzQTdHcXpxTU5BU2dKbEFlNWgzek84Q253TWJzMTYxRQpaSFdKMFhiUUZuSlovWjIrY2lsbTFiR0tNOVRDVXpJYzhXTFNRR3RXMTdON3o4ZVc5VWd5emZud0J3ektJajAwCkxRcFIrbUdhUDNSSjNKRzI4S1ZXemlSN0JGS0d2Z29wSE5DODdPTUJ1SmdHNnFTS29ES1BqZ0VDZ1lFQXpPcHYKOUFhb0gwLzVGam9McWtQMDA1aUU2YjF3cEx0OWtzQWlZTHgzemRtTFozeVhWV0pVWnRCWm5lSzFweVJxMUFJZQpTTjQ1RFZhME83V0JQK3orSzVTd0lnTWZ4NVlYLzJ3M0E5SUlCcFBBRTZCYVBvaHZ3OGNjT3ZxY3lMOHdNUmszCkY0Z0s1SmR3REFjN3BOMk5WVzNHL0Iyc04rSjgwUGhsVWJiT1NYTUNnWUE1cXNaYi9hZVhhQVVmQy9kVzhNQ3oKOVJ3Yk13R2JiTUtVZkJiayszOFJOaWVzRUllbUV0Mk5vREtjNUlIeDR5TFJjZWsyTUJZZWNUSDYvU1lxRmdmSgplK1BVajk2eGdVZTkvaU9vcml5UFF2QmhGMVdWT0QwNW5jU2xQYWpTNE9BK1VrOWFxOVozU3dVK2ZJbDVzRFQ2CnVON0Ixb0dlN3NJZzhFUkRXOXRzQVFLQmdRQ2NTNWhXbFprNFFPUnBPcDdaSUhvbHhtaGliQmIxM3ZmWnJlaksKeGhYUEVjWU5pZTlYdGVkUWdFeEthN2hJSXpQRVAxVmdHUGVGSUFQYW93ZFJmZThqeUlaTGV2eUxYQVV6MGhObwpPNVBaaUdweHpkWG5hbU5zL1hxZjFiVXVQUDJDQll5S3l6NGJ1eEpBYW1mb3lQL2JFQjg4LzFqelN6SU9wZGVKCjZ4Z08xd0tCZ1FEMGp3SWs4dGNveG9SbUd1ZVJpSVlGNUZnVG9hNlhCcGlNaEJwMm5CY3I1NEZqcE9Eb1NpbVUKUHowNEJYWE5OR0Z6Z2pNOWFxUi9nTS9tUFNiSDdMS2Qvc1RSOW1BcGRRQVhtSU1zb3hGaGg3MWpSaEhvR0pLSQpiMExSNHhTaTFvSGc0Y0xsR3Qvd3BNL1NqczUyZ2ZOeFdZNVd6NXduU05SRDlvVzlhckdzK1E9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+---
+# Source: voyager/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: voyager-sweet-cow
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+---
+# Source: voyager/templates/cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: voyager-sweet-cow
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+rules:
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - "*"
+- apiGroups:
+  - extensions
+  resources:
+  - thirdpartyresources
+  verbs:
+  - "*"
+- apiGroups:
+  - voyager.appscode.com
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs: ["get", "create", "update", "patch"]
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs: ["*"]
+- apiGroups:
+  - extensions
+  resources:
+  - deployments
+  - daemonsets
+  - ingresses
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - replicationcontrollers
+  - services
+  - endpoints
+  - configmaps
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: ["create"]
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["list", "watch", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources:
+  - nodes
+  verbs: ["list", "watch", "get"]
+- apiGroups: [""]
+  resources:
+  - serviceaccounts
+  verbs: ["get", "create", "delete", "patch"]
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  verbs: ["get", "create", "delete", "patch"]
+---
+# Source: voyager/templates/user-roles.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: appscode:voyager:view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups:
+  - voyager.appscode.com
+  resources:
+  - certificates
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: voyager/templates/user-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: appscode:voyager:edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups:
+  - voyager.appscode.com
+  resources:
+  - certificates
+  - ingresses
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+# Source: voyager/templates/apiregistration.yaml
+# to delegate authentication and authorization
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: voyager-sweet-cow-apiserver-auth-delegator
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: voyager-sweet-cow
+  namespace: default
+---
+# Source: voyager/templates/cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: voyager-sweet-cow
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: voyager-sweet-cow
+subjects:
+- kind: ServiceAccount
+  name: voyager-sweet-cow
+  namespace: default
+---
+# Source: voyager/templates/apiregistration.yaml
+# to read the config for terminating authentication
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: voyager-sweet-cow-apiserver-extension-server-authentication-reader
+  namespace: kube-system
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: extension-apiserver-authentication-reader
+subjects:
+- kind: ServiceAccount
+  name: voyager-sweet-cow
+  namespace: default
+---
+# Source: voyager/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: voyager-sweet-cow
+  labels:
+    app: "voyager"
+    chart: "voyager-3.2.4"
+    release: "sweet-cow"
+    heritage: "Tiller"
+spec:
+  ports:
+  # Port used to expose admission webhook apiserver
+  - name: admission
+    port: 443
+    targetPort: 8443
+  # Port used to expose Prometheus metrics for the operator
+  - name: ops
+    port: 56790
+    targetPort: 56790
+  # Port used to respond to Let's Encrypt HTTP challenges
+  - name: acme
+    port: 56791
+    targetPort: 56791
+  selector:
+    app: "voyager"
+    release: "sweet-cow"
+---
+# Source: voyager/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: voyager-sweet-cow
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "voyager"
+      release: "sweet-cow"
+  template:
+    metadata:
+      labels:
+        app: "voyager"
+        release: "sweet-cow"
+    spec:
+      serviceAccountName: voyager-sweet-cow
+      containers:
+      - name: voyager
+        image: appscode/voyager:6.0.0
+        imagePullPolicy: IfNotPresent
+        args:
+        - run
+        - --cloud-provider=
+        - --cloud-config=
+        - --v=3
+        - --rbac=true
+        - --ingress-class=
+        - --operator-service=voyager-sweet-cow
+        - --docker-registry=appscode
+        - --haproxy-image-tag=1.7.10-6.0.0
+        - --exporter-image-tag=6.0.0
+        - --secure-port=8443
+        - --audit-log-path=-
+        - --tls-cert-file=/var/serving-cert/tls.crt
+        - --tls-private-key-file=/var/serving-cert/tls.key
+        ports:
+        - containerPort: 8443
+        - containerPort: 56790
+        - containerPort: 56791
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8443
+            scheme: HTTPS
+        volumeMounts:
+        - mountPath: /var/serving-cert
+          name: serving-cert
+      volumes:
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: voyager-sweet-cow-apiserver-cert
+---
+# Source: voyager/templates/apiregistration.yaml
+apiVersion: apiregistration.k8s.io/v1beta1
+kind: APIService
+metadata:
+  name: v1beta1.admission.voyager.appscode.com
+  labels:
+    chart: "voyager-3.2.4"
+    app: "voyager"
+    heritage: "Tiller"
+    release: "sweet-cow"
+spec:
+  group: admission.voyager.appscode.com
+  version: v1beta1
+  service:
+    namespace: default
+    name: voyager-sweet-cow
+  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwemRtTXQKWTJGMExXTmhNQjRYRFRFNE1EWXdNakl5TURBek9Gb1hEVEk0TURVek1ESXlNREF6T0Zvd0ZURVRNQkVHQTFVRQpBeE1LYzNaakxXTmhkQzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTHVLCkRqOERIZ3hOQXh6ekdNWWdIYWRzT1VvYlV1R1lLYWFxcFhNelk4Y095clBFQmlzZFRmYlNhVTR6SmVFalRuRFMKWi9sUHZWVVNadHI2dGtzN0U1RU5xM3NPSE9taEphVDR4RTd1a0ExeHR6MVB3VjZweFJZejk1OHV4WmJocEViSApLOGZrbDRid2JIbkdkbGg4VTIvWWlqYU5icUcrVlplZlBRc1RIZ3lPdE9kTDc5Tll6Q0x6ZG16Q0VTZUsvbzZhCmk2M3RLT1FRZlE0dWRmOGJQQWFuV2J0SG9ibkpHbUxkOWRHRVlrTjI0cWR4aWpsYVpQM2s2K25nbTFaWitSdG8KN21zTWl6ZmRNUTVKUTRoaDl0SXY3aU1remFZeEdSQ3BweDk0UGY5Z1NvSWdzZ2xvdlJTa3NBZG9KWS84ZUlvRQo1RWtsQlpwN3kwMEJZY056UWRVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUIwR0ExVWRKUVFXCk1CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC9NQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDUzlYTFZWcW5sSDlxQ0JWdDA5SG1nMnN5MmVZUFZZRXRKZmZIUjdTc3dwS1VyQ2hYZApVSm5FNmIwWmVkT3UwQmhIYTJwS3VVTW00NEpkRDZyUDErK1lvcXlVVDdGaVNXNnJzbzNpMjZKbGx2NWtpVGNVCmhZc25UUHhUaCtpV3lUK1dXRWlsUHBQSlR1WERFRFdOUS9zQVdxSjhndU1YMm5tODhNWDNEYVpNYWJwT3kzb3EKejk3aHFqdGNqZG1vS25iLzMvVjB4aGphZFpENmw5Q3hGY0FoSDQ0enNTRCt2QUpQQU5RR0lqdEk4UUE3SUNKMgpvMzBsRnlLUlplVEFZNmJKUTNzUUo0bUFVL1ZDM0NQYWFuOHRYL25Na3BrL0JuSmE5RDNDR0RNWlRRN2E4UW5aCldSZTY4dUNlQ0NSKzhhOTNrOUM3RGxyWi9MYUxVc3hJbXgvRQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  groupPriorityMinimum: 10000
+  versionPriority: 15

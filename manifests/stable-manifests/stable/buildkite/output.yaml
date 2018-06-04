@@ -1,0 +1,58 @@
+[debug] Created tunnel using local port: '39997'
+
+[debug] SERVER: "127.0.0.1:39997"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/buildkite
+
+NAME:   ponderous-bison
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:14 2018
+CHART: buildkite-0.2.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+agent:
+  meta: role=agent
+  token: ""
+image:
+  pullPolicy: IfNotPresent
+  repository: buildkite/agent
+  tag: 3
+nodeSelector: {}
+privateSshKey: ""
+registryCreds:
+  dockerConfig: ""
+  gcrServiceAccountKey: ""
+replicaCount: 1
+resources: {}
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: buildkite/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ponderous-bison-buildkite
+  labels:
+    app: buildkite
+    chart: buildkite-0.2.3
+    release: ponderous-bison
+    heritage: Tiller
+type: Opaque
+data:
+  agent-token:
+---
+# Source: buildkite/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ponderous-bison-buildkite
+  labels:
+    app: buildkite
+    chart: buildkite-0.2.3
+    release: ponderous-bison
+    heritage: Tiller

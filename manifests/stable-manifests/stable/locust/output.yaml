@@ -1,0 +1,238 @@
+[debug] Created tunnel using local port: '39293'
+
+[debug] SERVER: "127.0.0.1:39293"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/locust
+
+NAME:   binging-bronco
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:24 2018
+CHART: locust-0.2.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+Name: locust
+image:
+  pullPolicy: IfNotPresent
+  repository: quay.io/honestbee/locust
+  tag: 0.7.5
+master:
+  config:
+    target-host: https://site.example.com
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+service:
+  annotations: {}
+  externalPort: 8089
+  extraLabels: {}
+  internalPort: 8089
+  name: master-web
+  nodePort: 0
+  type: NodePort
+worker:
+  config:
+    locust-script: /locust-tasks/tasks.py
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: locust/templates/worker-cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: binging-bronco-worker
+  labels:
+    heritage: "Tiller"
+    release: "binging-bronco"
+    chart: "locust-0.2.0"
+    app: binging-bronco-locust
+data:
+  tasks.py: |-
+    from locust import HttpLocust, TaskSet, task
+  
+    class ElbTasks(TaskSet):
+      @task
+      def status(self):
+          self.client.get("/status")
+  
+    class ElbWarmer(HttpLocust):
+      task_set = ElbTasks
+      min_wait = 1000
+      max_wait = 3000
+---
+# Source: locust/templates/master-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: binging-bronco-master-svc
+  labels:
+    heritage: "Tiller"
+    release: "binging-bronco"
+    chart: "locust-0.2.0"
+    app: binging-bronco-locust
+    component: "master"
+spec:
+  type: NodePort
+  ports:
+  - name: master-web
+    port: 8089
+    targetPort: 8089
+    nodePort: 0
+    protocol: TCP
+  - name: master-p1
+    port: 5557
+    protocol: TCP
+    targetPort: 5557
+  - name: master-p2
+    port: 5558
+    protocol: TCP
+    targetPort: 5558
+  selector:
+    app: binging-bronco-locust
+    component: "master"
+  sessionAffinity: None
+---
+# Source: locust/templates/master-deploy.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: binging-bronco-master
+  labels:
+    app: binging-bronco-locust
+    heritage: "Tiller"
+    release: "binging-bronco"
+    chart: "locust-0.2.0"
+    component: master
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        release: "binging-bronco"
+        app: binging-bronco-locust
+        component: "master"
+    spec:
+      containers:
+      - name: locust
+        image: "quay.io/honestbee/locust:0.7.5"
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          
+        env:
+        - name: TARGET_HOST
+          value: "https://site.example.com"
+        - name: LOCUST_MODE
+          value: "master"
+        - name: LOCUST_SCRIPT
+          value: "/locust-tasks/tasks.py"
+        ports:
+        - containerPort: 8089
+          name: loc-master-web
+          protocol: TCP
+        - containerPort: 5557
+          name: loc-master-p1
+          protocol: TCP
+        - containerPort: 5558
+          name: loc-master-p2
+          protocol: TCP
+        volumeMounts:
+          - name: locust-tasks
+            mountPath: /locust-tasks/
+        livenessProbe:
+          periodSeconds: 30
+          httpGet:
+            path: /
+            port: 8089
+        readinessProbe:
+          periodSeconds: 30
+          httpGet:
+            path: /
+            port: 8089
+      volumes:
+      - name: "locust-tasks"
+        configMap:
+          name: binging-bronco-worker
+      restartPolicy: Always
+---
+# Source: locust/templates/worker-deploy.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: binging-bronco-worker
+  labels:
+    heritage: "Tiller"
+    release: "binging-bronco"
+    chart: "locust-0.2.0"
+    app: binging-bronco-locust
+    component: worker
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: binging-bronco-locust
+        component: worker
+    spec:
+      containers:
+      - name: locust
+        image: "quay.io/honestbee/locust:0.7.5"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - name: locust-tasks
+            mountPath: /locust-tasks/
+        env:
+        - name: LOCUST_SCRIPT
+          value: "/locust-tasks/tasks.py"
+        - name: LOCUST_MODE
+          value: "worker"
+        - name: LOCUST_MASTER
+          value: binging-bronco-master-svc
+        - name: LOCUST_MASTER_WEB
+          value: "8089"
+        - name: TARGET_HOST
+          value: "https://site.example.com"
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          
+      restartPolicy: Always
+      volumes:
+        - name: "locust-tasks"
+          configMap:
+            name: binging-bronco-worker

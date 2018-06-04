@@ -1,0 +1,7 @@
+[debug] Created tunnel using local port: '42009'
+
+[debug] SERVER: "127.0.0.1:42009"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/mediawiki
+

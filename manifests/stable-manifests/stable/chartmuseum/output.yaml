@@ -1,0 +1,227 @@
+[debug] Created tunnel using local port: '42839'
+
+[debug] SERVER: "127.0.0.1:42839"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/chartmuseum
+
+NAME:   foppish-wolverine
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:15 2018
+CHART: chartmuseum-1.5.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+deployment:
+  annotations: {}
+env:
+  open:
+    ALLOW_OVERWRITE: false
+    AUTH_ANONYMOUS_GET: false
+    CACHE: null
+    CACHE_REDIS_ADDR: null
+    CACHE_REDIS_DB: 0
+    CHART_POST_FORM_FIELD_NAME: chart
+    CHART_URL: null
+    CONTEXT_PATH: null
+    DEBUG: false
+    DEPTH: 0
+    DISABLE_API: true
+    DISABLE_METRICS: true
+    DISABLE_STATEFILES: false
+    INDEX_LIMIT: 0
+    LOG_JSON: true
+    PROV_POST_FORM_FIELD_NAME: prov
+    STORAGE: local
+    STORAGE_ALIBABA_BUCKET: null
+    STORAGE_ALIBABA_ENDPOINT: null
+    STORAGE_ALIBABA_PREFIX: null
+    STORAGE_ALIBABA_SSE: null
+    STORAGE_AMAZON_BUCKET: null
+    STORAGE_AMAZON_ENDPOINT: null
+    STORAGE_AMAZON_PREFIX: null
+    STORAGE_AMAZON_REGION: null
+    STORAGE_AMAZON_SSE: null
+    STORAGE_GOOGLE_BUCKET: null
+    STORAGE_GOOGLE_PREFIX: null
+    STORAGE_MICROSOFT_CONTAINER: null
+    STORAGE_MICROSOFT_PREFIX: null
+    STORAGE_OPENSTACK_CACERT: null
+    STORAGE_OPENSTACK_CONTAINER: null
+    STORAGE_OPENSTACK_PREFIX: null
+    STORAGE_OPENSTACK_REGION: null
+  secret:
+    BASIC_AUTH_PASS: null
+    BASIC_AUTH_USER: null
+    CACHE_REDIS_PASSWORD: null
+    GOOGLE_CREDENTIALS_JSON: null
+gcp:
+  secret:
+    enabled: false
+    key: credentials.json
+    name: null
+image:
+  pullPolicy: IfNotPresent
+  repository: chartmuseum/chartmuseum
+  tag: v0.7.0
+ingress:
+  enabled: false
+nodeSelector: {}
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: false
+  size: 8Gi
+probes:
+  liveness:
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readiness:
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+replica:
+  annotations: {}
+replicaCount: 1
+resources: {}
+securityContext: {}
+service:
+  annotations: {}
+  externalPort: 8080
+  nodePort: null
+  type: ClusterIP
+serviceAccount:
+  create: false
+strategy:
+  rollingUpdate:
+    maxUnavailable: 0
+  type: RollingUpdate
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: chartmuseum/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: foppish-wolverine-chartmuseum
+  labels:
+    app: chartmuseum
+    chart: chartmuseum-1.5.0
+    heritage: "Tiller"
+    release: "foppish-wolverine"
+type: Opaque
+data:
+---
+# Source: chartmuseum/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: foppish-wolverine-chartmuseum
+  annotations:
+    {}
+    
+  labels:
+    app: chartmuseum
+    chart: chartmuseum-1.5.0
+    heritage: "Tiller"
+    release: "foppish-wolverine"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: chartmuseum
+    release: "foppish-wolverine"
+---
+# Source: chartmuseum/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: foppish-wolverine-chartmuseum
+  annotations:
+    {}
+    
+  labels:
+    app: chartmuseum
+    chart: chartmuseum-1.5.0
+    heritage: "Tiller"
+    release: "foppish-wolverine"
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+    type: RollingUpdate
+    
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      name: foppish-wolverine-chartmuseum
+      annotations:
+        {}
+        
+      labels:
+        app: chartmuseum
+        release: "foppish-wolverine"
+    spec:
+      containers:
+      - name: chartmuseum
+        image: chartmuseum/chartmuseum:v0.7.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: "CHART_POST_FORM_FIELD_NAME"
+          value: "chart"
+        - name: "DISABLE_API"
+          value: "true"
+        - name: "DISABLE_METRICS"
+          value: "true"
+        - name: "LOG_JSON"
+          value: "true"
+        - name: "PROV_POST_FORM_FIELD_NAME"
+          value: "prov"
+        - name: "STORAGE"
+          value: "local"
+        args:
+        - --port=8080
+        - --storage-local-rootdir=/storage
+        ports:
+        - name: http
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+          
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+          
+        volumeMounts:
+        - mountPath: /storage
+          name: storage-volume
+      volumes:
+      - name: storage-volume
+        emptyDir: {}

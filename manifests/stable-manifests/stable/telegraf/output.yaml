@@ -1,0 +1,144 @@
+[debug] Created tunnel using local port: '35301'
+
+[debug] SERVER: "127.0.0.1:35301"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/telegraf
+
+NAME:   boisterous-ragdoll
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:37 2018
+CHART: telegraf-0.3.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+daemonset:
+  config:
+    agent:
+      collection_jitter: 0s
+      debug: false
+      flush_interval: 10s
+      flush_jitter: 0s
+      hostname: $HOSTNAME
+      interval: 10s
+      logfile: ""
+      metric_batch_size: 1000
+      metric_buffer_limit: 10000
+      omit_hostname: false
+      precision: ""
+      quiet: false
+      round_interval: true
+    inputs:
+      cpu:
+        collect_cpu_time: false
+        percpu: true
+        totalcpu: true
+      disk:
+        ignore_fs:
+        - tmpfs
+        - devtmpfs
+      diskio: null
+      docker:
+        container_names: []
+        endpoint: unix:///var/run/docker.sock
+      kernel: null
+      kubernetes:
+        bearer_token: /var/run/secrets/kubernetes.io/serviceaccount/token
+        insecure_skip_verify: true
+        url: http://$HOSTNAME:10255
+      mem: null
+      processes: null
+      swap: null
+      system: null
+    outputs:
+      influxdb:
+        database: telegraf
+        urls: []
+  enabled: true
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 0.1
+      memory: 256Mi
+image:
+  pullPolicy: IfNotPresent
+  repo: telegraf
+  tag: 1.5-alpine
+single:
+  config:
+    agent:
+      collection_jitter: 0s
+      debug: false
+      flush_interval: 10s
+      flush_jitter: 0s
+      hostname: telegraf-polling-service
+      interval: 10s
+      logfile: ""
+      metric_batch_size: 1000
+      metric_buffer_limit: 10000
+      omit_hostname: false
+      precision: ""
+      quiet: false
+      round_interval: true
+    inputs:
+      cpu:
+        percpu: false
+        totalcpu: true
+      influxdb:
+        timeout: 5s
+        urls:
+        - http://influxdb-influxdb.tick:8086/debug/vars
+      prometheus:
+        bearer_token: /var/run/secrets/kubernetes.io/serviceaccount/token
+        insecure_skip_verify: true
+        name_prefix: prom_
+        urls:
+        - https://kubernetes.default:443/metrics
+      statsd:
+        allowed_pending_messages: 10000
+        metric_separator: _
+        percentile_limit: 1000
+        percentiles:
+        - 50
+        - 95
+        - 99
+        service_address: :8125
+      system: null
+    outputs:
+      influxdb:
+        database: telegraf
+        urls: []
+  enabled: true
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 0.1
+      memory: 256Mi
+  service:
+    enabled: true
+    type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: telegraf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: boisterous-ragdoll-teleg-s
+  labels:
+    chart: "telegraf-0.3.3"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8125
+    targetPort: 8125
+    name: "statsd"
+  selector:
+    app: boisterous-ragdoll-teleg-s

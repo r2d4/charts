@@ -1,0 +1,80 @@
+[debug] Created tunnel using local port: '45323'
+
+[debug] SERVER: "127.0.0.1:45323"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/chaoskube
+
+NAME:   messy-woodpecker
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:15 2018
+CHART: chaoskube-0.7.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+annotations: null
+dryRun: true
+excludedDaysOfYear: null
+excludedTimesOfDay: null
+excludedWeekdays: null
+image: quay.io/linki/chaoskube
+imageTag: v0.8.0
+interval: 10m
+labels: null
+name: chaoskube
+namespaces: null
+nodeSelector: {}
+rbac:
+  create: false
+  serviceAccountName: default
+replicas: 1
+resources:
+  cpu: 10m
+  memory: 16Mi
+timezone: UTC
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: chaoskube/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: messy-woodpecker-chaoskube
+  labels:
+    app: messy-woodpecker-chaoskube
+    chart: chaoskube-0.7.0
+    release: messy-woodpecker
+    heritage: Tiller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: messy-woodpecker-chaoskube
+        chart: chaoskube-0.7.0
+        release: messy-woodpecker
+        heritage: Tiller
+    spec:
+      containers:
+      - name: chaoskube
+        image: quay.io/linki/chaoskube:v0.8.0
+        args:
+        - --interval=10m
+        - --labels=
+        - --annotations=
+        - --namespaces=
+        - --excluded-weekdays=
+        - --excluded-times-of-day=
+        - --excluded-days-of-year=
+        - --timezone=UTC
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 10m
+            memory: 16Mi
+      serviceAccountName: "default"

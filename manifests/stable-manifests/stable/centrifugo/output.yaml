@@ -1,0 +1,184 @@
+[debug] Created tunnel using local port: '40049'
+
+[debug] SERVER: "127.0.0.1:40049"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/centrifugo
+
+NAME:   fun-llama
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:14 2018
+CHART: centrifugo-2.0.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+admin:
+  password: ""
+  secret: ""
+args:
+- --web=true
+config:
+  namespaces:
+  - anonymous: true
+    history_lifetime: 30
+    history_size: 10
+    join_leave: true
+    name: public
+    presence: true
+    publish: true
+    recover: true
+    watch: true
+  web: true
+image:
+  pullPolicy: IfNotPresent
+  repository: centrifugo/centrifugo
+  tag: 1.7.3
+ingress:
+  annotations:
+    ingress.kubernetes.io/proxy-read-timeout: 3600
+    ingress.kubernetes.io/proxy-send-timeout: 3600
+    ingress.kubernetes.io/upstream-fail-timeout: 60
+    ingress.kubernetes.io/upstream-max-fails: 2
+    kubernetes.io/ingress.class: nginx
+  enabled: false
+  hosts: []
+replicaCount: 1
+resources: {}
+secret: ""
+service:
+  annotations: {}
+  clusterIP: ""
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  nodePort: ""
+  port: 8000
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: centrifugo/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fun-llama-centrifugo
+  labels:
+    app: centrifugo
+    chart: centrifugo-2.0.1
+    release: fun-llama
+    heritage: Tiller
+type: Opaque
+data:
+  admin-password: "WTFpbGxldGVMWQ=="
+  admin-secret: "YmtjQWpZem5zYg=="
+  secret: "V1dCWW55TlR2Nw=="
+---
+# Source: centrifugo/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fun-llama-centrifugo-config
+  labels:
+    heritage: Tiller
+    release: fun-llama
+    chart: centrifugo-2.0.1
+    app: centrifugo
+data:
+  config.json: |-
+    {"namespaces":[{"anonymous":true,"history_lifetime":30,"history_size":10,"join_leave":true,"name":"public","presence":true,"publish":true,"recover":true,"watch":true}],"web":true}
+---
+# Source: centrifugo/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    heritage: Tiller
+    release: fun-llama
+    chart: centrifugo-2.0.1
+    app: centrifugo
+  name: fun-llama-centrifugo
+spec:
+  type: "ClusterIP"
+  clusterIP: ""
+  ports:
+    - name: http
+      port: 8000
+      protocol: TCP
+      targetPort: http
+  selector:
+    app: centrifugo
+    release: fun-llama
+---
+# Source: centrifugo/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fun-llama-centrifugo
+  labels:
+    heritage: Tiller
+    release: fun-llama
+    chart: centrifugo-2.0.1
+    app: centrifugo
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+  template:
+    metadata:
+      annotations:
+        checksum/config: 3e5a2a6bbd058fb9320cf4c5056781ca6946ac3a6d2adc2efacf23df21782e8d
+      labels:
+        app: centrifugo
+        release: fun-llama
+    spec:
+      containers:
+      - name: centrifugo
+        image: "centrifugo/centrifugo:1.7.3"
+        imagePullPolicy: IfNotPresent
+        command:
+        - centrifugo
+        args:
+        - --web=true
+        env:
+        - name: CENTRIFUGO_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fun-llama-centrifugo
+              key: admin-password
+        - name: CENTRIFUGO_ADMIN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: fun-llama-centrifugo
+              key: admin-secret
+        - name: CENTRIFUGO_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: fun-llama-centrifugo
+              key: secret
+        volumeMounts:
+        - name: "fun-llama-centrifugo-config"
+          mountPath: "/centrifugo"
+          readOnly: true
+        ports:
+        - name: http
+          containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /connection
+            port: 8000
+        readinessProbe:
+          httpGet:
+            path: /connection
+            port: 8000
+        resources:
+          {}
+          
+      volumes:
+      - name: fun-llama-centrifugo-config
+        configMap:
+          name: fun-llama-centrifugo-config

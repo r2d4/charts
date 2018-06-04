@@ -1,0 +1,126 @@
+[debug] Created tunnel using local port: '40633'
+
+[debug] SERVER: "127.0.0.1:40633"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/chronograf
+
+NAME:   foppish-dachshund
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:15 2018
+CHART: chronograf-0.4.5
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: Always
+  repository: docker.io/chronograf
+  tag: 1.3-alpine
+ingress:
+  annotations: null
+  enabled: false
+  hostname: chronograf.foobar.com
+  tls: false
+oauth:
+  enabled: false
+  github:
+    client_id: CHANGE_ME
+    client_secret: CHANGE_ME
+    enabled: false
+    gh_orgs: ""
+  google:
+    client_id: CHANGE_ME
+    client_secret: CHANGE_ME
+    domains: ""
+    enabled: false
+    public_url: ""
+  heroku:
+    client_id: CHANGE_ME
+    client_secret: CHANGE_ME
+    enabled: false
+    he_orgs: ""
+  token_secret: CHANGE_ME
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: false
+  size: 8Gi
+resources:
+  limits:
+    cpu: 2
+    memory: 2Gi
+  requests:
+    cpu: 0.1
+    memory: 256Mi
+service:
+  replicas: 1
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: chronograf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: foppish-dachshund-chronograf
+  labels:
+    app: foppish-dachshund-chronograf
+    chart: "chronograf-0.4.5"
+    release: "foppish-dachshund"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8888
+  selector:
+    app: foppish-dachshund-chronograf
+---
+# Source: chronograf/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: foppish-dachshund-chronograf
+  labels:
+    app: foppish-dachshund-chronograf
+    chart: "chronograf-0.4.5"
+    release: "foppish-dachshund"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: foppish-dachshund-chronograf
+    spec:
+      containers:
+      - name: chronograf
+        image: "docker.io/chronograf:1.3-alpine"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8888
+          name: api
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: api
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: api
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/chronograf
+        resources:
+          limits:
+            cpu: 2
+            memory: 2Gi
+          requests:
+            cpu: 0.1
+            memory: 256Mi
+          
+      volumes:
+        - name: data
+          emptyDir: {}

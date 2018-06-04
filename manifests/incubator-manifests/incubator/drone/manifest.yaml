@@ -1,0 +1,164 @@
+
+---
+# Source: drone/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nasal-cardinal-drone
+  labels:
+    app: drone
+    chart: "drone-1.0.5"
+    release: "nasal-cardinal"
+    heritage: "Tiller"
+type: Opaque
+data:
+  
+  secret: "b2tJaDQzMkRKbE1EeFlRcm4xNnBmNFMx"
+---
+# Source: drone/templates/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nasal-cardinal-drone
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+# Source: drone/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nasal-cardinal-drone
+  labels:
+    app: drone
+    chart: "drone-1.0.5"
+    release: "nasal-cardinal"
+    heritage: "Tiller"
+---
+# Source: drone/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nasal-cardinal-drone
+  labels:
+    app: drone
+    chart: "drone-1.0.5"
+    release: "nasal-cardinal"
+    heritage: "Tiller"
+rules:
+  - apiGroups:
+      - extensions
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+---
+# Source: drone/templates/role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nasal-cardinal-drone
+  labels:
+    app: drone
+    chart: "drone-1.0.5"
+    release: "nasal-cardinal"
+    heritage: "Tiller"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: nasal-cardinal-drone
+subjects:
+- kind: ServiceAccount
+  name: nasal-cardinal-drone
+  namespace: default
+---
+# Source: drone/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nasal-cardinal-drone
+  labels:
+    app: drone
+    chart: "drone-1.0.5"
+    release: "nasal-cardinal"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  - name: grpc
+    port: 9000
+    targetPort: 9000
+  selector:
+    app: drone
+    release: "nasal-cardinal"
+    component: server
+---
+# Source: drone/templates/deployment-agent.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nasal-cardinal-drone-agent
+  labels:
+    app: drone
+    chart: "drone-1.0.5"
+    release: "nasal-cardinal"
+    heritage: "Tiller"
+    component: agent
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        checksum/secrets: 5d1f5b6e3cfcca44e353d2bf171dabcc627256ad9f073386f2f8d66dad641b64
+      labels:
+        app: drone
+        release: "nasal-cardinal"
+        component: agent
+    spec:
+      serviceAccountName: nasal-cardinal-drone
+      containers:
+      - name: nasal-cardinal-drone-agent
+        image: "docker.io/drone/agent:0.8.5"
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: DRONE_SERVER
+            value: nasal-cardinal-drone:9000
+          - name: DRONE_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: nasal-cardinal-drone
+                key: secret
+          - name: DOCKER_HOST
+            value: tcp://localhost:2375
+          - name: DRONE_DEBUG
+            value: "false"
+        resources:
+          {}
+          
+      - name: nasal-cardinal-drone-dind
+        image: "docker.io/library/docker:17.12.0-ce-dind"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DOCKER_DRIVER
+          value: overlay2
+        
+        securityContext:
+          privileged: true
+        resources:
+          {}
+          
+        volumeMounts:
+          - name: docker-graph-storage
+            mountPath: /var/lib/docker
+      volumes:
+      - name: docker-graph-storage
+        emptyDir: {}

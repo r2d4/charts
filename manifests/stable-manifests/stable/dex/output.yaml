@@ -1,0 +1,257 @@
+[debug] Created tunnel using local port: '34715'
+
+[debug] SERVER: "127.0.0.1:34715"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/dex
+
+NAME:   coiling-ragdoll
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:16 2018
+CHART: dex-0.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+config:
+  connectors: null
+  enablePasswordDB: true
+  issuer: https://dex.minikube.local:5556
+  logger:
+    level: debug
+  oauth2:
+    skipApprovalScreen: true
+  storage:
+    config:
+      inCluster: true
+    type: kubernetes
+  web:
+    https: 0.0.0.0:5556
+    tlsCert: /etc/dex/tls/tls.crt
+    tlsKey: /etc/dex/tls/tls.key
+env: []
+extraVolumeMounts: []
+extraVolumes: []
+image: quay.io/coreos/dex
+imagePullPolicy: IfNotPresent
+imageTag: v2.10.0
+inMiniKube: false
+nodeSelector: {}
+rbac:
+  create: true
+replicas: 1
+resources: null
+secret: {}
+selfSigned:
+  altIPs: {}
+  altNames:
+  - dex.minikube.local
+  caDays: 10000
+  certDays: 10000
+  create: true
+  image: gcr.io/google_containers/kubernetes-dashboard-init-amd64
+  imagePullPolicy: IfNotPresent
+  imageTag: v1.0.0
+service:
+  port: 5556
+  type: ClusterIP
+serviceAccount:
+  create: true
+  name: null
+
+HOOKS:
+---
+# coiling-ragdoll-dex
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded
+  name: coiling-ragdoll-dex
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+    component: "job"
+spec:
+  activeDeadlineSeconds: 
+  template:
+    metadata:
+      labels:
+        app: dex
+        release: "coiling-ragdoll"
+        component: "job"
+    spec:
+      serviceAccountName: coiling-ragdoll-dex
+      restartPolicy: OnFailure
+      containers:
+      - name: main
+        image: "gcr.io/google_containers/kubernetes-dashboard-init-amd64:v1.0.0"
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/bash
+        - -exc
+        - |
+          cat << EOF > req.cnf
+          [req]
+          req_extensions = v3_req
+          distinguished_name = req_distinguished_name
+
+          [req_distinguished_name]
+
+          [ v3_req ]
+          basicConstraints = CA:FALSE
+          keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+          subjectAltName = @alt_names
+
+          [alt_names]
+          DNS.1 = dex.minikube.local
+          EOF
+
+          openssl genrsa -out ca-key.pem 2048;
+          openssl req -x509 -new -nodes -key ca-key.pem -days 10000 -out ca.pem -subj "/CN=dex-ca";
+
+          openssl genrsa -out key.pem 2048;
+          openssl req -new -key key.pem -out csr.pem -subj "/CN=dex" -config req.cnf;
+          openssl x509 -req -in csr.pem -CA ca.pem -CAkey ca-key.pem -CAcreateserial -out cert.pem -days 10000 -extensions v3_req -extfile req.cnf;
+
+          kubectl delete configmap "coiling-ragdoll-dex-ca" --namespace default || true
+          kubectl delete secret "coiling-ragdoll-dex-ca" coiling-ragdoll-dex-tls --namespace default || true
+
+          kubectl create configmap "coiling-ragdoll-dex-ca" --namespace default --from-file dex-ca.pem=ca.pem;
+          kubectl create secret tls "coiling-ragdoll-dex-ca" --namespace default --cert=ca.pem --key=ca-key.pem;
+          kubectl create secret tls coiling-ragdoll-dex-tls --namespace default --cert=cert.pem --key=key.pem;
+MANIFEST:
+
+---
+# Source: dex/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+  name: coiling-ragdoll-dex
+data:
+  config.yaml: Y29ubmVjdG9yczogbnVsbAplbmFibGVQYXNzd29yZERCOiB0cnVlCmlzc3VlcjogaHR0cHM6Ly9kZXgubWluaWt1YmUubG9jYWw6NTU1Ngpsb2dnZXI6CiAgbGV2ZWw6IGRlYnVnCm9hdXRoMjoKICBza2lwQXBwcm92YWxTY3JlZW46IHRydWUKc3RvcmFnZToKICBjb25maWc6CiAgICBpbkNsdXN0ZXI6IHRydWUKICB0eXBlOiBrdWJlcm5ldGVzCndlYjoKICBodHRwczogMC4wLjAuMDo1NTU2CiAgdGxzQ2VydDogL2V0Yy9kZXgvdGxzL3Rscy5jcnQKICB0bHNLZXk6IC9ldGMvZGV4L3Rscy90bHMua2V5Cg==
+---
+# Source: dex/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+  name: coiling-ragdoll-dex
+---
+# Source: dex/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+  name: coiling-ragdoll-dex
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: coiling-ragdoll-dex
+    namespace: default
+---
+# Source: dex/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: coiling-ragdoll-dex
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    release: coiling-ragdoll
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+  - port: 5556
+    targetPort: https
+  selector:
+    app: dex
+    release: "coiling-ragdoll"
+---
+# Source: dex/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: coiling-ragdoll-dex
+  labels:
+    app: dex
+    chart: dex-0.1.0
+    heritage: "Tiller"
+    release: "coiling-ragdoll"
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: dex
+      release: "coiling-ragdoll"
+  template:
+    metadata:
+      labels:
+        app: dex
+        release: "coiling-ragdoll"
+    spec:
+      serviceAccountName: coiling-ragdoll-dex
+      nodeSelector:
+          {}
+          
+      containers:
+      - name: main
+        image: "quay.io/coreos/dex:v2.10.0"
+        imagePullPolicy: IfNotPresent
+        command:
+        - /usr/local/bin/dex
+        - serve
+        - /etc/dex/cfg/config.yaml
+        resources:
+          null
+          
+        ports:
+        - name: https
+          containerPort: 5556
+          protocol: TCP
+        env:
+          []
+          
+        volumeMounts:
+        - mountPath: /etc/dex/cfg
+          name: config
+        - mountPath: /etc/dex/tls
+          name: tls
+      volumes:
+      - secret:
+          defaultMode: 420
+          items:
+          - key: config.yaml
+            path: config.yaml
+          secretName: coiling-ragdoll-dex
+        name: config
+      - name: tls
+        secret:
+          defaultMode: 420
+          secretName: "coiling-ragdoll-dex-tls"

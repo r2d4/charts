@@ -1,0 +1,120 @@
+
+---
+# Source: coredns/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wise-tuatara-coredns
+data:
+  Corefile: |-
+    .:53 {
+        cache 30
+        errors
+        health
+        kubernetes cluster.local 10.3.0.0/24
+        loadbalance round_robin
+        prometheus 0.0.0.0:9153
+        proxy . /etc/resolv.conf
+    }
+---
+# Source: coredns/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wise-tuatara-coredns
+  labels:
+    heritage: "Tiller"
+    release: "wise-tuatara"
+    chart: "coredns-0.9.0"
+    k8s-app: "coredns"
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "CoreDNS"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9153"
+spec:
+  selector:
+    k8s-app: "coredns"
+  ports:
+  - name: dns
+    port: 53
+    protocol: UDP
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
+  - name: metrics
+    port: 9153
+    protocol: TCP
+  type: ClusterIP
+---
+# Source: coredns/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wise-tuatara-coredns
+  labels:
+    heritage: "Tiller"
+    release: "wise-tuatara"
+    chart: "coredns-0.9.0"
+    k8s-app: "coredns"
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "CoreDNS"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: "coredns"
+  template:
+    metadata:
+      labels:
+        k8s-app: "coredns"
+        release: "wise-tuatara"
+      annotations:
+        checksum/config: 53e58ee1a197e3edf99c662bdcfb986c06abca6eb64f845895bd438e6062cb3c
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      serviceAccountName: "default"
+      dnsPolicy: Default
+      containers:
+      - name: "coredns"
+        image: "coredns/coredns:1.0.6"
+        imagePullPolicy: IfNotPresent
+        args: [ "-conf", "/etc/coredns/Corefile" ]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/coredns
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          
+        ports:
+        - containerPort: 53
+          name: dns
+          protocol: UDP
+        - containerPort: 53
+          name: dns-tcp
+          protocol: TCP
+        - containerPort: 9153
+          name: metrics
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+      volumes:
+        - name: config-volume
+          configMap:
+            name: wise-tuatara-coredns
+            items:
+            - key: Corefile
+              path: Corefile

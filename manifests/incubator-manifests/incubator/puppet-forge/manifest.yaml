@@ -1,0 +1,145 @@
+
+---
+# Source: puppet-forge/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plucking-chinchilla-puppet-forge-config
+  namespace: default
+  labels:
+    app: puppet-forge
+    chart: puppet-forge-0.1.8
+    release: plucking-chinchilla
+    heritage: Tiller
+data:
+  puppet_forge_proxy: https://forgeapi.puppetlabs.com/
+  puppet_forge_cache_ttl: "1800"
+  puppet_forge_cache_size: "250"
+#  puppet_forge_module_dir: [/puppet/modules]
+---
+# Source: puppet-forge/templates/pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: plucking-chinchilla-claim
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+# Source: puppet-forge/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: plucking-chinchilla-puppet-forge
+  labels:
+    app: puppet-forge
+    chart: puppet-forge-0.1.8
+    release: plucking-chinchilla
+    heritage: Tiller
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: puppet-forge
+  selector:
+    app: puppet-forge
+    release: plucking-chinchilla
+---
+# Source: puppet-forge/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: plucking-chinchilla-puppet-forge
+  labels:
+    app: puppet-forge
+    chart: puppet-forge-0.1.8
+    release: plucking-chinchilla
+    heritage: Tiller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: puppet-forge
+        release: plucking-chinchilla
+    spec:
+      initContainers:
+        - name: prep-volume
+          image: busybox
+          command: 
+            - chown
+            - -R
+            - 1000:1000
+            - /puppet
+          volumeMounts:
+            - mountPath: /puppet/modules
+              name: plucking-chinchilla-volume
+              readOnly: false
+      containers:
+        - name: puppet-forge
+          image: "hickey/puppet_forge:1.10.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PUPPET_FORGE_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  name: plucking-chinchilla-puppet-forge-config
+                  key: puppet_forge_proxy
+            - name: PUPPET_FORGE_CACHE_TTL
+              valueFrom:
+                configMapKeyRef:
+                  name: plucking-chinchilla-puppet-forge-config
+                  key: puppet_forge_cache_ttl
+            - name: PUPPET_FORGE_CACHE_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: plucking-chinchilla-puppet-forge-config
+                  key: puppet_forge_cache_size
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          volumeMounts:
+            - mountPath: /puppet/modules
+              name: plucking-chinchilla-volume
+              readOnly: false
+          resources:
+            limits:
+              cpu: 200m
+              memory: 32Mi
+            requests:
+              cpu: 100m
+              memory: 16Mi
+            
+      volumes:
+        - name: plucking-chinchilla-volume
+          persistentVolumeClaim:
+            claimName: plucking-chinchilla-claim
+---
+# Source: puppet-forge/templates/ingress.yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: plucking-chinchilla-puppet-forge
+  labels:
+    app: puppet-forge
+    chart: puppet-forge-0.1.8
+    release: plucking-chinchilla
+    heritage: Tiller
+  annotations:
+spec:
+  backend:
+    serviceName: plucking-chinchilla-puppet-forge
+    servicePort: 80

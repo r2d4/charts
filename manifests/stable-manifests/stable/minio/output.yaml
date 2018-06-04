@@ -1,0 +1,354 @@
+[debug] Created tunnel using local port: '35027'
+
+[debug] SERVER: "127.0.0.1:35027"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/minio
+
+NAME:   zooming-bat
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:26 2018
+CHART: minio-1.3.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+accessKey: AKIAIOSFODNN7EXAMPLE
+affinity: {}
+azuregateway:
+  enabled: false
+configPath: ""
+defaultBucket:
+  enabled: false
+  name: bucket
+  policy: none
+  purge: false
+gcsgateway:
+  enabled: false
+  gcsKeyJson: ""
+  projectId: ""
+image:
+  pullPolicy: IfNotPresent
+  repository: minio/minio
+  tag: RELEASE.2018-04-27T23-33-52Z
+ingress:
+  annotations: {}
+  enabled: false
+  hosts:
+  - chart-example.local
+  path: /
+  tls: []
+mcImage:
+  pullPolicy: IfNotPresent
+  repository: minio/mc
+  tag: RELEASE.2018-04-28T00-08-20Z
+minioConfig:
+  aqmp:
+    autoDeleted: false
+    deliveryMode: 0
+    durable: false
+    enable: false
+    exchange: ""
+    exchangeType: ""
+    immediate: false
+    internal: false
+    mandatory: false
+    noWait: false
+    routingKey: ""
+    url: ""
+  browser: "on"
+  domain: ""
+  elasticsearch:
+    enable: false
+    format: namespace
+    index: ""
+    url: ""
+  kafka:
+    brokers: "null"
+    enable: false
+    topic: ""
+  mqtt:
+    broker: ""
+    clientId: ""
+    enable: false
+    password: ""
+    qos: 0
+    topic: ""
+    username: ""
+  mysql:
+    database: ""
+    dsnString: ""
+    enable: false
+    format: namespace
+    host: ""
+    password: ""
+    port: ""
+    table: ""
+    user: ""
+  nats:
+    address: ""
+    async: false
+    clientID: ""
+    clusterID: ""
+    enable: false
+    enableStreaming: false
+    maxPubAcksInflight: 0
+    password: ""
+    pingInterval: 0
+    secure: false
+    subject: ""
+    token: ""
+    username: ""
+  postgresql:
+    connectionString: ""
+    database: ""
+    enable: false
+    format: namespace
+    host: ""
+    password: ""
+    port: ""
+    table: ""
+    user: ""
+  redis:
+    address: ""
+    enable: false
+    format: namespace
+    key: ""
+    password: ""
+  reducedRedundancyStorageClass: ""
+  region: us-east-1
+  standardStorageClass: ""
+  webhook:
+    enable: false
+    endpoint: ""
+mode: standalone
+mountPath: /export
+networkPolicy:
+  allowExternal: true
+  enabled: false
+nodeSelector: {}
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: true
+  size: 10Gi
+replicas: 4
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+secretKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+service:
+  annotations: {}
+  clusterIP: None
+  port: 9000
+  type: ClusterIP
+subPath: ""
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: minio/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: zooming-bat-minio
+  labels:
+    app: minio
+    chart: minio-1.3.3
+    release: zooming-bat
+    heritage: Tiller
+type: Opaque
+data:
+  accesskey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
+  secretkey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==
+---
+# Source: minio/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zooming-bat-minio
+  labels:
+    app: minio
+    chart: minio-1.3.3
+    release: zooming-bat
+    heritage: Tiller
+data:
+  initialize: |-
+    #!/bin/sh
+    set -e ; # Have script exit in the event of a failed command.
+    
+    # connectToMinio
+    # Use a check-sleep-check loop to wait for Minio service to be available
+    connectToMinio() {
+      ATTEMPTS=0 ; LIMIT=29 ; # Allow 30 attempts
+      set -e ; # fail if we can't read the keys.
+      ACCESS=$(cat /config/accesskey) ; SECRET=$(cat /config/secretkey) ;
+      set +e ; # The connections to minio are allowed to fail.
+      echo "Connecting to Minio server: http://$MINIO_ENDPOINT:$MINIO_PORT" ;
+      MC_COMMAND="mc config host add myminio http://$MINIO_ENDPOINT:$MINIO_PORT $ACCESS $SECRET" ;
+      $MC_COMMAND ;
+      STATUS=$? ;
+      until [ $STATUS = 0 ]
+      do
+        ATTEMPTS=`expr $ATTEMPTS + 1` ;
+        echo \"Failed attempts: $ATTEMPTS\" ;
+        if [ $ATTEMPTS -gt $LIMIT ]; then
+          exit 1 ;
+        fi ;
+        sleep 2 ; # 1 second intervals between attempts
+        $MC_COMMAND ;
+        STATUS=$? ;
+      done ;
+      set -e ; # reset `e` as active
+      return 0
+    }
+    
+    # checkBucketExists ($bucket)
+    # Check if the bucket exists, by using the exit code of `mc ls`
+    checkBucketExists() {
+      BUCKET=$1
+      CMD=$(/usr/bin/mc ls myminio/$BUCKET > /dev/null 2>&1)
+      return $?
+    }
+    
+    # createBucket ($bucket, $policy, $purge)
+    # Ensure bucket exists, purging if asked to
+    createBucket() {
+      BUCKET=$1
+      POLICY=$2
+      PURGE=$3
+    
+      # Purge the bucket, if set & exists
+      # Since PURGE is user input, check explicitly for `true`
+      if [ $PURGE = true ]; then
+        if checkBucketExists $BUCKET ; then
+          echo "Purging bucket '$BUCKET'."
+          set +e ; # don't exit if this fails
+          /usr/bin/mc rm -r --force myminio/$BUCKET
+          set -e ; # reset `e` as active
+        else
+          echo "Bucket '$BUCKET' does not exist, skipping purge."
+        fi
+      fi
+    
+      # Create the bucket if it does not exist
+      if ! checkBucketExists $BUCKET ; then
+        echo "Creating bucket '$BUCKET'"
+        /usr/bin/mc mb myminio/$BUCKET
+      else
+        echo "Bucket '$BUCKET' already exists."
+      fi
+    
+      # At this point, the bucket should exist, skip checking for existence
+      # Set policy on the bucket
+      echo "Setting policy of bucket '$BUCKET' to '$POLICY'."
+      /usr/bin/mc policy $POLICY myminio/$BUCKET
+    }
+    
+    # Try connecting to Minio instance
+    connectToMinio
+    # Create the bucket
+    createBucket bucket none false
+---
+# Source: minio/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: zooming-bat-minio
+  labels:
+    app: minio
+    chart: minio-1.3.3
+    release: zooming-bat
+    heritage: Tiller
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "10Gi"
+---
+# Source: minio/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zooming-bat-minio
+  labels:
+    app: minio
+    chart: minio-1.3.3
+    release: zooming-bat
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  clusterIP: None
+  
+  ports:
+    - name: service
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+  selector:
+    app: minio
+    release: zooming-bat
+---
+# Source: minio/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: zooming-bat-minio
+  labels:
+    app: minio
+    chart: minio-1.3.3
+    release: zooming-bat
+    heritage: Tiller
+spec:
+  selector:
+    matchLabels:
+      app: minio
+      release: zooming-bat
+  template:
+    metadata:
+      name: zooming-bat-minio
+      labels:
+        app: minio
+        release: zooming-bat
+    spec:
+      containers:
+        - name: minio
+          image: "minio/minio:RELEASE.2018-04-27T23-33-52Z"
+          imagePullPolicy: IfNotPresent
+          args: ["server", "/export"]
+          volumeMounts:
+            - name: export
+              mountPath: /export
+          ports:
+            - name: service
+              containerPort: 9000
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: zooming-bat-minio
+                  key: accesskey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: zooming-bat-minio
+                  key: secretkey
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            
+      volumes:
+        - name: export
+          persistentVolumeClaim:
+            claimName: zooming-bat-minio
+        - name: minio-user
+          secret:
+            secretName: zooming-bat-minio

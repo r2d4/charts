@@ -1,0 +1,247 @@
+
+---
+# Source: grafana/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    release: banking-umbrellabird
+    heritage: Tiller
+type: Opaque
+data:
+  admin-user: "YWRtaW4="
+  admin-password: "QkN2NVdWRVVxaDlva3NVdW40Q1o0NGxpcDhDRHk3OU5waFh5WWhyQw=="
+  ldap-toml: ""
+---
+# Source: grafana/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    release: banking-umbrellabird
+    heritage: Tiller
+data:
+  grafana.ini: |
+    [analytics]
+    check_for_updates = true
+    [grafana_net]
+    url = https://grafana.net
+    [log]
+    mode = console
+    [paths]
+    data = /var/lib/grafana/data
+    logs = /var/log/grafana
+    plugins = /var/lib/grafana/plugins
+---
+# Source: grafana/templates/dashboards-json-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banking-umbrellabird-grafana-dashboards-json
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    release: banking-umbrellabird
+    heritage: Tiller
+data:
+---
+# Source: grafana/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    heritage: Tiller
+    release: banking-umbrellabird
+  name: banking-umbrellabird-grafana
+---
+# Source: grafana/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    heritage: Tiller
+    release: banking-umbrellabird
+rules:
+- apiGroups:      ['extensions']
+  resources:      ['podsecuritypolicies']
+  verbs:          ['use']
+  resourceNames:  [banking-umbrellabird-grafana]
+---
+# Source: grafana/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    heritage: Tiller
+    release: banking-umbrellabird
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: banking-umbrellabird-grafana
+subjects:
+- kind: ServiceAccount
+  name: banking-umbrellabird-grafana
+---
+# Source: grafana/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    release: banking-umbrellabird
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - name: service
+      port: 80
+      protocol: TCP
+      targetPort: 3000
+
+  selector:
+    app: grafana
+    release: banking-umbrellabird
+---
+# Source: grafana/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    release: banking-umbrellabird
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+      release: banking-umbrellabird
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: grafana
+        release: banking-umbrellabird
+    spec:
+      serviceAccountName: banking-umbrellabird-grafana
+      containers:
+        - name: grafana
+          image: "grafana/grafana:5.1.2"
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: config
+              mountPath: "/etc/grafana/grafana.ini"
+              subPath: grafana.ini
+            - name: ldap
+              mountPath: "/etc/grafana/ldap.toml"
+              subPath: ldap.toml
+            - name: storage
+              mountPath: "/var/lib/grafana"
+              subPath: 
+          ports:
+            - name: service
+              containerPort: 80
+              protocol: TCP
+            - name: grafana
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: banking-umbrellabird-grafana
+                  key: admin-user
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-umbrellabird-grafana
+                  key: admin-password
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 10
+            periodSeconds: 10
+          resources:
+            {}
+            
+      volumes:
+        - name: config
+          configMap:
+            name: banking-umbrellabird-grafana
+        - name: dashboards-json
+          configMap:
+            name: banking-umbrellabird-grafana-dashboards-json
+        - name: ldap
+          secret:
+            secretName: banking-umbrellabird-grafana
+            items:
+              - key: ldap-toml
+                path: ldap.toml
+        - name: storage
+          emptyDir: {}
+---
+# Source: grafana/templates/podsecuritypolicy.yaml
+apiVersion: extensions/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: banking-umbrellabird-grafana
+  labels:
+    app: grafana
+    chart: grafana-1.10.1
+    heritage: Tiller
+    release: banking-umbrellabird
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: false

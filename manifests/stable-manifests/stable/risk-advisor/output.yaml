@@ -1,0 +1,90 @@
+[debug] Created tunnel using local port: '33273'
+
+[debug] SERVER: "127.0.0.1:33273"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/risk-advisor
+
+NAME:   erstwhile-olm
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:33 2018
+CHART: risk-advisor-2.0.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: pposkrobko/risk-advisor
+  tag: v1.0.0
+replicaCount: 1
+service:
+  nodePort: 31111
+  port: 9997
+  targetPort: 9997
+  type: NodePort
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: risk-advisor/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: erstwhile-olm-risk-advisor
+  labels:
+    chart: "risk-advisor-2.0.4"
+    app: "risk-advisor"
+    release: "erstwhile-olm"
+    heritage: "Tiller"
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    protocol: TCP
+    port: 9997
+    targetPort: 9997
+    nodePort: 31111
+  selector:
+    app: "risk-advisor"
+    release: "erstwhile-olm"
+---
+# Source: risk-advisor/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: erstwhile-olm-risk-advisor
+  labels:
+    chart: "risk-advisor-2.0.4"
+    app: "risk-advisor"
+    release: "erstwhile-olm"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: "risk-advisor"
+        release: "erstwhile-olm"
+    spec:
+      containers:
+      - name: risk-advisor
+        image: "pposkrobko/risk-advisor:v1.0.0"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9997
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9997
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9997
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        resources:
+            null

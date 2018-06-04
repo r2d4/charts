@@ -1,0 +1,558 @@
+[debug] Created tunnel using local port: '36977'
+
+[debug] SERVER: "127.0.0.1:36977"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/mariadb
+
+NAME:   pioneering-albatross
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:25 2018
+CHART: mariadb-4.2.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+db:
+  forcePassword: false
+  name: my_database
+  password: null
+  user: null
+image:
+  pullPolicy: IfNotPresent
+  registry: docker.io
+  repository: bitnami/mariadb
+  tag: 10.1.33
+master:
+  antiAffinity: soft
+  config: |-
+    [mysqld]
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mariadb
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    tmpdir=/opt/bitnami/mariadb/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+    log-error=/opt/bitnami/mariadb/logs/mysqld.log
+    character-set-server=UTF8
+    collation-server=utf8_general_ci
+
+    [client]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    default-character-set=UTF8
+
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  persistence:
+    accessModes:
+    - ReadWriteOnce
+    annotations: null
+    enabled: true
+    size: 8Gi
+  readinessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  resources: {}
+metrics:
+  annotations:
+    prometheus.io/port: "9104"
+    prometheus.io/scrape: "true"
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: prom/mysqld-exporter
+    tag: v0.10.0
+  resources: {}
+replication:
+  enabled: true
+  forcePassword: false
+  password: null
+  user: replicator
+rootUser:
+  forcePassword: false
+  password: null
+service:
+  port: 3306
+  type: ClusterIP
+slave:
+  antiAffinity: soft
+  config: |-
+    [mysqld]
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mariadb
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    tmpdir=/opt/bitnami/mariadb/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+    log-error=/opt/bitnami/mariadb/logs/mysqld.log
+    character-set-server=UTF8
+    collation-server=utf8_general_ci
+
+    [client]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    default-character-set=UTF8
+
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  persistence:
+    accessModes:
+    - ReadWriteOnce
+    annotations: null
+    enabled: true
+    size: 8Gi
+  readinessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  replicas: 1
+  resources: {}
+
+HOOKS:
+---
+# pioneering-albatross-mariadb-test-vqhva
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "pioneering-albatross-mariadb-test-vqhva"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  initContainers:
+    - name: "test-framework"
+      image: "dduportal/bats:0.4.0"
+      command:
+        - "bash"
+        - "-c"
+        - |
+          set -ex
+          # copy bats to tools dir
+          cp -R /usr/local/libexec/ /tools/bats/
+      volumeMounts:
+      - mountPath: /tools
+        name: tools
+  containers:
+    - name: mariadb-test
+      image: "docker.io/bitnami/mariadb:10.1.33"
+      imagePullPolicy: "IfNotPresent"
+      command: ["/tools/bats/bats", "-t", "/tests/run.sh"]
+      env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pioneering-albatross-mariadb
+              key: mariadb-root-password
+      volumeMounts:
+      - mountPath: /tests
+        name: tests
+        readOnly: true
+      - mountPath: /tools
+        name: tools
+  volumes:
+  - name: tests
+    configMap:
+      name: pioneering-albatross-mariadb-tests
+  - name: tools
+    emptyDir: {}
+  restartPolicy: Never
+MANIFEST:
+
+---
+# Source: mariadb/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pioneering-albatross-mariadb
+  labels:
+    app: "mariadb"
+    chart: mariadb-4.2.0
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+type: Opaque
+data:
+  mariadb-root-password: "OHB0QjNGdnBCMQ=="
+  
+  mariadb-replication-password: "bHZmSVZjSUs4eA=="
+---
+# Source: mariadb/templates/master-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pioneering-albatross-mariadb-master
+  labels:
+    app: mariadb
+    component: "master"
+    chart: mariadb-4.2.0
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+data:
+  my.cnf: |-
+    [mysqld]
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mariadb
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    tmpdir=/opt/bitnami/mariadb/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+    log-error=/opt/bitnami/mariadb/logs/mysqld.log
+    character-set-server=UTF8
+    collation-server=utf8_general_ci
+    
+    [client]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    default-character-set=UTF8
+    
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+---
+# Source: mariadb/templates/slave-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pioneering-albatross-mariadb-slave
+  labels:
+    app: mariadb
+    component: "slave"
+    chart: mariadb-4.2.0
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+data:
+  my.cnf: |-
+    [mysqld]
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mariadb
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    tmpdir=/opt/bitnami/mariadb/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+    log-error=/opt/bitnami/mariadb/logs/mysqld.log
+    character-set-server=UTF8
+    collation-server=utf8_general_ci
+    
+    [client]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    default-character-set=UTF8
+    
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mariadb/tmp/mysql.sock
+    pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+---
+# Source: mariadb/templates/tests.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pioneering-albatross-mariadb-tests
+data:
+  run.sh: |-
+    @test "Testing MariaDB is accessible" {
+      mysql -h pioneering-albatross-mariadb -uroot -p$MARIADB_ROOT_PASSWORD -e 'show databases;'
+    }
+---
+# Source: mariadb/templates/master-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: pioneering-albatross-mariadb
+  labels:
+    app: "mariadb"
+    component: "master"
+    chart: mariadb-4.2.0
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: mysql
+  selector:
+    app: "mariadb"
+    component: "master"
+    release: "pioneering-albatross"
+---
+# Source: mariadb/templates/slave-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: pioneering-albatross-mariadb-slave
+  labels:
+    app: "mariadb"
+    chart: mariadb-4.2.0
+    component: "slave"
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: mysql
+  selector:
+    app: "mariadb"
+    component: "slave"
+    release: "pioneering-albatross"
+---
+# Source: mariadb/templates/master-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: pioneering-albatross-mariadb-master
+  labels:
+    app: "mariadb"
+    chart: mariadb-4.2.0
+    component: "master"
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+spec:
+  serviceName: "pioneering-albatross-mariadb-master"
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: "mariadb"
+        component: "master"
+        release: "pioneering-albatross"
+    spec:
+      securityContext:
+        runAsUser: 1001
+        fsGroup: 1001
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: "mariadb"
+                  release: "pioneering-albatross"
+      containers:
+      - name: "mariadb"
+        image: docker.io/bitnami/mariadb:10.1.33
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pioneering-albatross-mariadb
+              key: mariadb-root-password
+        - name: MARIADB_DATABASE
+          value: "my_database"
+        - name: MARIADB_REPLICATION_MODE
+          value: "master"
+        - name: MARIADB_REPLICATION_USER
+          value: "replicator"
+        - name: MARIADB_REPLICATION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pioneering-albatross-mariadb
+              key: mariadb-replication-password
+        ports:
+        - name: mysql
+          containerPort: 3306
+        livenessProbe:
+          exec:
+            command: ["sh", "-c", "exec mysqladmin status -uroot -p$MARIADB_ROOT_PASSWORD"]
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["sh", "-c", "exec mysqladmin status -uroot -p$MARIADB_ROOT_PASSWORD"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          {}
+          
+        volumeMounts:
+        - name: data
+          mountPath: /bitnami/mariadb
+        - name: config
+          mountPath: /opt/bitnami/mariadb/conf/my.cnf
+          subPath: my.cnf
+      volumes:
+        - name: config
+          configMap:
+            name: pioneering-albatross-mariadb-master
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app: "mariadb"
+          chart: mariadb-4.2.0
+          component: "master"
+          release: "pioneering-albatross"
+          heritage: "Tiller"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+---
+# Source: mariadb/templates/slave-statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: pioneering-albatross-mariadb-slave
+  labels:
+    app: "mariadb"
+    chart: mariadb-4.2.0
+    component: "slave"
+    release: "pioneering-albatross"
+    heritage: "Tiller"
+spec:
+  serviceName: "pioneering-albatross-mariadb-slave"
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: "mariadb"
+        component: "slave"
+        release: "pioneering-albatross"
+    spec:
+      securityContext:
+        runAsUser: 1001
+        fsGroup: 1001
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: "mariadb"
+                  release: "pioneering-albatross"
+      containers:
+      - name: "mariadb"
+        image: docker.io/bitnami/mariadb:10.1.33
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pioneering-albatross-mariadb
+              key: mariadb-root-password
+        - name: MARIADB_DATABASE
+          value: "my_database"
+        - name: MARIADB_REPLICATION_MODE
+          value: "slave"
+        - name: MARIADB_MASTER_HOST
+          value: pioneering-albatross-mariadb
+        - name: MARIADB_MASTER_PORT
+          value: "3306"
+        - name: MARIADB_MASTER_USER
+          value: "root"
+        - name: MARIADB_MASTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pioneering-albatross-mariadb
+              key: mariadb-root-password
+        - name: MARIADB_REPLICATION_USER
+          value: "replicator"
+        - name: MARIADB_REPLICATION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pioneering-albatross-mariadb
+              key: mariadb-replication-password
+        ports:
+        - name: mysql
+          containerPort: 3306
+        livenessProbe:
+          exec:
+            command: ["sh", "-c", "exec mysqladmin status -uroot -p$MARIADB_ROOT_PASSWORD"]
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["sh", "-c", "exec mysqladmin status -uroot -p$MARIADB_ROOT_PASSWORD"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          {}
+          
+        volumeMounts:
+        - name: data
+          mountPath: /bitnami/mariadb
+        - name: config
+          mountPath: /opt/bitnami/mariadb/conf/my.cnf
+          subPath: my.cnf
+      volumes:
+        - name: config
+          configMap:
+            name: pioneering-albatross-mariadb-slave
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app: "mariadb"
+          chart: mariadb-4.2.0
+          component: "slave"
+          release: "pioneering-albatross"
+          heritage: "Tiller"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"

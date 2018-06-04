@@ -1,0 +1,63 @@
+
+---
+# Source: external-dns/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: external-dns
+    chart: external-dns-0.6.1
+    heritage: Tiller
+    release: donating-badger
+  name: donating-badger-external-dns
+spec:
+  ports:
+    - port: 7979
+      protocol: TCP
+      targetPort: 7979
+  selector:
+    app: external-dns
+    release: donating-badger
+  type: "ClusterIP"
+---
+# Source: external-dns/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:     
+    app: external-dns
+    heritage: Tiller
+    release: donating-badger
+    chart: external-dns-0.6.1
+  name: donating-badger-external-dns
+spec:
+  template:
+    metadata:
+      labels:         
+        app: external-dns
+        heritage: Tiller
+        release: donating-badger
+    spec:
+      containers:
+        - name: external-dns
+          image: "registry.opensource.zalan.do/teapot/external-dns:v0.5.0"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - --log-level=info
+            - --policy=upsert-only
+            - --provider=aws
+            - --registry=txt
+            - --source=service
+            - --source=ingress
+          volumeMounts:
+          env:
+          - name: AWS_DEFAULT_REGION
+            value: us-east-1
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 7979
+          ports:
+            - containerPort: 7979
+      volumes:
+      serviceAccountName: "default"

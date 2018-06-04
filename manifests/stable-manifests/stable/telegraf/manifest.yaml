@@ -1,0 +1,17 @@
+
+---
+# Source: telegraf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: boisterous-ragdoll-teleg-s
+  labels:
+    chart: "telegraf-0.3.3"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8125
+    targetPort: 8125
+    name: "statsd"
+  selector:
+    app: boisterous-ragdoll-teleg-s

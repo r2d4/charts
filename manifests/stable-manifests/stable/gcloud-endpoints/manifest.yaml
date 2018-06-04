@@ -1,0 +1,63 @@
+
+---
+# Source: gcloud-endpoints/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kilted-dachshund-gcloud-
+spec:
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: kilted-dachshund-gcloud-
+  type: ClusterIP
+---
+# Source: gcloud-endpoints/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kilted-dachshund-gcloud-
+  labels:
+    app: kilted-dachshund-gcloud-
+    chart: "gcloud-endpoints-0.1.0"
+    release: "kilted-dachshund"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kilted-dachshund-gcloud-
+    spec:
+      containers:
+        - name: endpoints
+          image: "b.gcr.io/endpoints/endpoints-runtime:1"
+          imagePullPolicy: ""
+          args: [
+            "--status_port", "8090",
+          ]
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8090
+              name: status
+          livenessProbe:
+            httpGet:
+              path: /endpoints_status
+              port: 8090
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /endpoints_status
+              port: 8090
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          resources:
+                        
+            requests:  
+              cpu: 100m
+              memory: 128Mi

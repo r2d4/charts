@@ -1,0 +1,49 @@
+[debug] Created tunnel using local port: '39649'
+
+[debug] SERVER: "127.0.0.1:39649"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/coscale
+
+NAME:   quaffing-sloth
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:15 2018
+CHART: coscale-0.2.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+coscale:
+  accessToken: ""
+  appId: ""
+  templateId: ""
+image:
+  pullPolicy: IfNotPresent
+  repository: coscale/coscale-agent
+  tag: 3.10.11
+resources:
+  limits:
+    cpu: 256m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: coscale/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: coscale
+  labels:
+    app: coscale
+    chart: "coscale-0.2.1"
+    release: "quaffing-sloth"
+    heritage: "Tiller"
+type: Opaque
+data:
+ app_id : "TUlTU0lORw=="
+ access_token : "TUlTU0lORw=="

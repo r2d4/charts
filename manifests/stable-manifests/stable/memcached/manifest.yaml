@@ -1,0 +1,91 @@
+
+---
+# Source: memcached/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: newbie-platypus-memcached
+  labels:
+    app: newbie-platypus-memcached
+    chart: "memcached-2.1.1"
+    release: "newbie-platypus"
+    heritage: "Tiller"
+spec:
+  clusterIP: None
+  ports:
+  - name: memcache
+    port: 11211
+    targetPort: memcache
+  selector:
+    app: newbie-platypus-memcached
+---
+# Source: memcached/templates/statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: newbie-platypus-memcached
+  labels:
+    app: newbie-platypus-memcached
+    chart: "memcached-2.1.1"
+    release: "newbie-platypus"
+    heritage: "Tiller"
+spec:
+  serviceName: newbie-platypus-memcached
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: newbie-platypus-memcached
+        chart: "memcached-2.1.1"
+        release: "newbie-platypus"
+        heritage: "Tiller"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchLabels:
+                app:  newbie-platypus-memcached
+                release: "newbie-platypus"
+      containers:
+      - name: newbie-platypus-memcached
+        image: memcached:1.5.6-alpine
+        imagePullPolicy: ""
+        command:
+        - memcached
+        - -m 64
+        - -o
+        - modern
+        - -v
+        ports:
+        - name: memcache
+          containerPort: 11211
+        livenessProbe:
+          tcpSocket:
+            port: memcache
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: memcache
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+---
+# Source: memcached/templates/pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: newbie-platypus-memcached
+spec:
+  selector:
+    matchLabels:
+      app: newbie-platypus-memcached
+      chart: "memcached-2.1.1"
+      release: "newbie-platypus"
+      heritage: "Tiller"
+  minAvailable: 3

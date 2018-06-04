@@ -1,0 +1,75 @@
+
+---
+# Source: phpmyadmin/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ringed-worm-phpmyadmin
+  labels:
+    app: phpmyadmin
+    chart: phpmyadmin-0.1.4
+    release: ringed-worm
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: phpmyadmin
+    release: ringed-worm
+---
+# Source: phpmyadmin/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ringed-worm-phpmyadmin
+  labels:
+    app: phpmyadmin
+    chart: phpmyadmin-0.1.4
+    release: ringed-worm
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpmyadmin
+      release: ringed-worm
+  template:
+    metadata:
+      labels:
+        app: phpmyadmin
+        release: ringed-worm
+    spec:
+      containers:
+        - name: phpmyadmin
+          image: "docker.io/bitnami/phpmyadmin:4.8.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATABASE_PORT_NUMBER
+              value: "3306" 
+            - name: DATABASE_HOST
+              value: ""
+            - name: PHPMYADMIN_ALLOW_NO_PASSWORD
+              value: "true"
+            - name: PHPMYADMIN_ALLOW_ARBITRARY_SERVER
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: https
+              containerPort: 443
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}

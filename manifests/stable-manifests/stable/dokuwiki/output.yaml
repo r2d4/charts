@@ -1,0 +1,183 @@
+[debug] Created tunnel using local port: '35903'
+
+[debug] SERVER: "127.0.0.1:35903"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/dokuwiki
+
+NAME:   undercooked-cow
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:16 2018
+CHART: dokuwiki-1.0.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+dokuwikiEmail: user@example.com
+dokuwikiFullName: Full Name
+dokuwikiUsername: user
+dokuwikiWikiName: My Wiki
+image:
+  pullPolicy: IfNotPresent
+  registry: docker.io
+  repository: bitnami/dokuwiki
+  tag: 0.20180422.201805030840
+persistence:
+  apache:
+    accessMode: ReadWriteOnce
+    size: 1Gi
+  dokuwiki:
+    accessMode: ReadWriteOnce
+    size: 8Gi
+  enabled: true
+resources:
+  requests:
+    cpu: 300m
+    memory: 512Mi
+serviceType: LoadBalancer
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: dokuwiki/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: undercooked-cow-dokuwiki
+  labels:
+    app: undercooked-cow-dokuwiki
+    chart: "dokuwiki-1.0.2"
+    release: "undercooked-cow"
+    heritage: "Tiller"
+type: Opaque
+data:
+  
+  dokuwiki-password: "TllCR2JKMmhUUA=="
+---
+# Source: dokuwiki/templates/apache-pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: undercooked-cow-dokuwiki-apache
+  labels:
+    app: undercooked-cow-dokuwiki
+    chart: "dokuwiki-1.0.2"
+    release: "undercooked-cow"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+# Source: dokuwiki/templates/dokuwiki-pvc.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: undercooked-cow-dokuwiki-dokuwiki
+  labels:
+    app: undercooked-cow-dokuwiki
+    chart: "dokuwiki-1.0.2"
+    release: "undercooked-cow"
+    heritage: "Tiller"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "8Gi"
+---
+# Source: dokuwiki/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: undercooked-cow-dokuwiki
+  labels:
+    app: undercooked-cow-dokuwiki
+    chart: "dokuwiki-1.0.2"
+    release: "undercooked-cow"
+    heritage: "Tiller"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  - name: https
+    port: 443
+    targetPort: https
+  selector:
+    app: undercooked-cow-dokuwiki
+---
+# Source: dokuwiki/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: undercooked-cow-dokuwiki
+  labels:
+    app: undercooked-cow-dokuwiki
+    chart: "dokuwiki-1.0.2"
+    release: "undercooked-cow"
+    heritage: "Tiller"
+spec:
+  template:
+    metadata:
+      labels:
+        app: undercooked-cow-dokuwiki
+    spec:
+      containers:
+      - name: undercooked-cow-dokuwiki
+        image: "docker.io/bitnami/dokuwiki:0.20180422.201805030840"
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: DOKUWIKI_USERNAME
+          value: "user"
+        - name: DOKUWIKI_FULL_NAME
+          value: "Full Name"
+        - name: DOKUWIKI_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: undercooked-cow-dokuwiki
+              key: dokuwiki-password
+        - name: DOKUWIKI_EMAIL
+          value: "user@example.com"
+        - name: DOKUWIKI_WIKI_NAME
+          value: "My Wiki"
+        ports:
+        - name: http
+          containerPort: 80
+        - name: https
+          containerPort: 443
+        livenessProbe:
+          httpGet:
+            path: /doku.php
+            port: http
+          initialDelaySeconds: 120
+          timeoutSeconds: 5
+          failureThreshold: 6
+        readinessProbe:
+          httpGet:
+            path: /doku.php
+            port: http
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 300m
+            memory: 512Mi
+          
+        volumeMounts:
+        - name: dokuwiki-data
+          mountPath: /bitnami/dokuwiki
+        - name: apache-data
+          mountPath: /bitnami/apache
+      volumes:
+      - name: dokuwiki-data
+        persistentVolumeClaim:
+          claimName: undercooked-cow-dokuwiki-dokuwiki
+      - name: apache-data
+        persistentVolumeClaim:
+          claimName: undercooked-cow-dokuwiki-apache

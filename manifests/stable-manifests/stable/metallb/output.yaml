@@ -1,0 +1,325 @@
+[debug] Created tunnel using local port: '32977'
+
+[debug] SERVER: "127.0.0.1:32977"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/metallb
+
+NAME:   zealous-ladybird
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:25 2018
+CHART: metallb-0.6.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+configInline: null
+controller:
+  image:
+    pullPolicy: IfNotPresent
+    repository: metallb/controller
+    tag: v0.6.2
+  resources: null
+existingConfigMap: metallb-config
+prometheus:
+  scrapeAnnotations: false
+rbac:
+  create: true
+serviceAccounts:
+  controller:
+    create: true
+    name: null
+  speaker:
+    create: true
+    name: null
+speaker:
+  image:
+    pullPolicy: IfNotPresent
+    repository: metallb/speaker
+    tag: v0.6.2
+  resources: null
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: metallb/templates/service-accounts.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zealous-ladybird-metallb-controller
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+---
+# Source: metallb/templates/service-accounts.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zealous-ladybird-metallb-speaker
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+---
+# Source: metallb/templates/rbac.yaml
+# Roles
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: zealous-ladybird-metallb:controller
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch", "update"]
+- apiGroups: [""]
+  resources: ["services/status"]
+  verbs: ["update"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+---
+# Source: metallb/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: zealous-ladybird-metallb:speaker
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+rules:
+- apiGroups: [""]
+  resources: ["services", "endpoints", "nodes"]
+  verbs: ["get", "list", "watch"]
+---
+# Source: metallb/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: zealous-ladybird-metallb:speaker
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+subjects:
+- kind: ServiceAccount
+  name: zealous-ladybird-metallb-speaker
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: zealous-ladybird-metallb:speaker
+---
+# Source: metallb/templates/rbac.yaml
+## Role bindings
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: zealous-ladybird-metallb:controller
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+subjects:
+- kind: ServiceAccount
+  name: zealous-ladybird-metallb-controller
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: zealous-ladybird-metallb:controller
+---
+# Source: metallb/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zealous-ladybird-metallb-leader-election
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+rules:
+- apiGroups: [""]
+  resources: ["endpoints"]
+  resourceNames: ["metallb-speaker"]
+  verbs: ["get", "update"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["create"]
+---
+# Source: metallb/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: zealous-ladybird-metallb-config-watcher
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+---
+# Source: metallb/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zealous-ladybird-metallb-leader-election
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+subjects:
+- kind: ServiceAccount
+  name: zealous-ladybird-metallb-speaker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zealous-ladybird-metallb-leader-election
+---
+# Source: metallb/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: zealous-ladybird-metallb-config-watcher
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+subjects:
+- kind: ServiceAccount
+  name: zealous-ladybird-metallb-controller
+- kind: ServiceAccount
+  name: zealous-ladybird-metallb-speaker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: zealous-ladybird-metallb-config-watcher
+---
+# Source: metallb/templates/speaker.yaml
+apiVersion: apps/v1beta2
+kind: DaemonSet
+metadata:
+  name: zealous-ladybird-metallb-speaker
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+    component: speaker
+spec:
+  selector:
+    matchLabels:
+      app: metallb
+      component: speaker
+      release: "zealous-ladybird"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "zealous-ladybird"
+        chart: metallb-0.6.0
+        app: metallb
+        component: speaker
+    spec:
+      serviceAccountName: zealous-ladybird-metallb-speaker
+      terminationGracePeriodSeconds: 0
+      hostNetwork: true
+      containers:
+      - name: speaker
+        image: metallb/speaker:v0.6.2
+        imagePullPolicy: IfNotPresent
+        args:
+        - --port=7472
+        - --config=metallb-config
+        env:
+        - name: METALLB_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        ports:
+        - name: monitoring
+          containerPort: 7472
+        resources:
+          null
+          
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - all
+            add:
+            - net_raw
+---
+# Source: metallb/templates/controller.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: zealous-ladybird-metallb-controller
+  labels:
+    heritage: "Tiller"
+    release: "zealous-ladybird"
+    chart: metallb-0.6.0
+    app: metallb
+    component: controller
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: metallb
+      component: controller
+      release: "zealous-ladybird"
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "zealous-ladybird"
+        chart: metallb-0.6.0
+        app: metallb
+        component: controller
+    spec:
+      serviceAccountName: zealous-ladybird-metallb-controller
+      terminationGracePeriodSeconds: 0
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534 # nobody
+      containers:
+      - name: controller
+        image: metallb/controller:v0.6.2
+        imagePullPolicy: IfNotPresent
+        args:
+        - --port=7472
+        - --config=metallb-config
+        ports:
+        - name: monitoring
+          containerPort: 7472
+        resources:
+          null
+          
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          readOnlyRootFilesystem: true

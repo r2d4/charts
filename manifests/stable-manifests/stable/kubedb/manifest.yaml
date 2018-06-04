@@ -1,0 +1,368 @@
+
+---
+# Source: kubedb/templates/apiregistration.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: elevated-platypus-kubedb-apiserver-cert
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+type: Opaque
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURSekNDQWkrZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwemRtTXQKWTJGMExXTmhNQjRYRFRFNE1EWXdNakl5TURBeU1sb1hEVEk0TURVek1ESXlNREF5TWxvd0l6RWhNQjhHQTFVRQpBeE1ZWld4bGRtRjBaV1F0Y0d4aGRIbHdkWE10YTNWaVpXUmlNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DCkFROEFNSUlCQ2dLQ0FRRUF1aFVERzVoTXdZdUFNeTBDb01ZejA0VUYzN0pMSmZIWmoraUFMVlBGd1NXRWlHQSsKcjU3NzA0NHF0M0Vab3k2eGx6UUNVT3Q5ZThmWitoUnFqd1JxT25ibkdTa2VwYjNQZDJpaGZNZkpoT3grQ05QSQpYTlJUR3FpWTV6MTBqL2FMWVFGaVdpV0ZTemwxTmdPMzFXVnlwNzZxSnduRUdyV1FKT2Yva3VkWXFNUm1MQ3I1CndMRW9yVzBvTGRWanJ5MHdnR1NZVStldnFYM3d0YU5DSlo1T3oxcFBHTkpPL3NsQWI0MG9DNFBpbERFYUM0OXYKOElXZ1F1VFdldTR6TVRUTW5RcEYxN2RnWGN3ZGZ2RE1nMXFYZkRqaWFSYnBVYmk0UHZaM09zQ25sS3lyWE1KMQovNFlWVTV5WXB6R1BTQTNkcFdGYkVhTDJNczZVTXJkOThXZXJtd0lEQVFBQm80R1RNSUdRTUE0R0ExVWREd0VCCi93UUVBd0lGb0RBZEJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFRWUlLd1lCQlFVSEF3SXdEQVlEVlIwVEFRSC8KQkFJd0FEQlJCZ05WSFJFRVNqQklnaUJsYkdWMllYUmxaQzF3YkdGMGVYQjFjeTFyZFdKbFpHSXVaR1ZtWVhWcwpkSUlrWld4bGRtRjBaV1F0Y0d4aGRIbHdkWE10YTNWaVpXUmlMbVJsWm1GMWJIUXVjM1pqTUEwR0NTcUdTSWIzCkRRRUJDd1VBQTRJQkFRQTdidEhWOWlqbVZVN1p5ZU9zbHVRbEE2eUpKdEI3c0NXMXVDbG5Ea083S2kzY3NRVXIKVHdZcmp3YVFseE01MDM1aTJwTmU1ZU5yZVdFb2g3UU9hcDdzUWd0U2lEai9hc2tZV3A1N3hPcm8vaTZDMklCSApGMHRnYzBPajVLQ2hIOWFTVHExYThXWDZrMlpSODZ3YmZaNWlKcFRpRmE1UERhYmpIenVET2M2L1cxeDRrb1doCnN5c2NMTnBIM09VaGRYWnErVEcrMW5xVDZrcmJmUktQRTM0dW4yWGIwT25zYzEzeUJSaHh4UUlUL0RQbEJjUG8KS0RZNGF2VGsvSG1OTWlyQTJVUzNMTjI0NHNnWGtEbGk4MUZVNnZZZE9ZaWNWdVFFbEQ1TjVNYXk4cnFxRHJFUwpvZDBZVi9SZnduZFZKUzRqdjJPeHFsdWw4SXNPTlFPSVdGSWgKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdWhVREc1aE13WXVBTXkwQ29NWXowNFVGMzdKTEpmSFpqK2lBTFZQRndTV0VpR0ErCnI1NzcwNDRxdDNFWm95NnhselFDVU90OWU4ZloraFJxandScU9uYm5HU2tlcGIzUGQyaWhmTWZKaE94K0NOUEkKWE5SVEdxaVk1ejEwai9hTFlRRmlXaVdGU3psMU5nTzMxV1Z5cDc2cUp3bkVHcldRSk9mL2t1ZFlxTVJtTENyNQp3TEVvclcwb0xkVmpyeTB3Z0dTWVUrZXZxWDN3dGFOQ0paNU96MXBQR05KTy9zbEFiNDBvQzRQaWxERWFDNDl2CjhJV2dRdVRXZXU0ek1UVE1uUXBGMTdkZ1hjd2RmdkRNZzFxWGZEamlhUmJwVWJpNFB2WjNPc0NubEt5clhNSjEKLzRZVlU1eVlwekdQU0EzZHBXRmJFYUwyTXM2VU1yZDk4V2VybXdJREFRQUJBb0lCQUJjK0xLY3p2TktvRkJsUQpVL1cxRENBdGkzQkhtdTlnYUNaN2loY2ZVYUl3aDM5cFZpc2xscHIwTlEyNHlOVURMaGVPM1lNeUJ2aUJIQThLCm9jeS9abTFyRUs2cDNqUWhvMXBzN1U3aXZaOG0wdzlUTk1Hem03WEd2V0tVNEl4aTVVSDJwRXhTUjNYLzlVNEwKNU5oNDFYdHlhMXA0ODgvS1FmajZLWWcxOFhNUzdsZkwzQkRiTk8xUnhTMU9GTXNXZTJLMHV0QlFuU0xzK1RONQpSK0ZOd25KOWdyL2FCS3g3S2txa2NTenBnQS9IT3RHN1JLekVqa0x5WGZ1WHhhYnFmaittM1RIRHo5cTBLNGZQCmk5d1N3THB0VXRMbDVVN3JUZTYyUjRYYzRrTXVyN1BqL0RsMnF2MjBKRUtNU2J1Q2RiRXZnU0k3TnBiaitkazQKUlErR0pQRUNnWUVBN3hmT2E3OW5wcTFrdXdGZFFzWWRSK3RqeXJuZ3h6dTE5YVVhVWVPSkVQelAwdWMwazVVUwppZndOUVp4VGVJUFRzTnhCWS9iNnNsK1Z1OWswQ0pTZ0ExUUZRU1p6MlNCWGFmSEZaZ2J6Ly9Cbi9XOGROemx6CjUyd0VpU2JsNlJSc1dwOXZCUFBQRXZxVnZTTmpvdWQybXNueklDaGloVlNMd2IvclZjN2hPdzhDZ1lFQXh6MlMKcVVDck5nMlZZNklVSFY4TDFBZWxZRTB0RS9taFVzMW9mMWc4UnlKSnhpU1ZKWm1nL0RJZHhYNHQwY21WenZxegplNzQxOWJqQ0dNR3lIeVR0TUlzNGg1VEdJc1orTTNWT1Q2c3FkZHdQaHJhSFN2NXJFUzdoZVJ6SktqUHFhWTFjCjhlaEpPaUNETXg2MmxjSDMrMkRkclVET0ZOd3Q2SjFqTWpZUWRyVUNnWUVBcStEWVV0c0pYMmdkRnRaM1BjNkEKTkRpQ3g3VHlZeWVJdW11VFRUVWVUdWovV2VVK0JhNVA0b1FnMzM3Sy9zTCtCcEdBTEtYYk9TbS8wWWZtZ1JpZgpJMlZlVmFTWCtZbm5iVkVTRURPRmF3TmZMbkNYZHlERk1xT1RheWxjZEQ5cldZWnQ0QWlKWDJKbkRNNEpEWTRKCjFHTERkZVd5VlprZTB3enQyQVRlSTM4Q2dZQU15S0daWklIWHhRVlowRE4wTXY0Q1M3OUxyNGY5NlIxMXY2STkKMFg2RW5lbVg0ZzhEeTVpdHRkVjlMM3huSW9VUE03ekNhdER4aERwSDlsMmthKzBnR1Q2MlRGQnVPTWd1S3crcwpRdkpGZjZvclhaak9zZ1pTb3V4cXBmTXVWd2hxWDF5Z1ZPUWw2NklmYkpBUWlkS01lWW1mclRITDJ0akRQUjM1ClFjaktwUUtCZ1FEaHA1Rm5LN3FxMHBqalN5aXA1Vyt2UlRrSmRRejVHamE5cUVkTEhoTHNFVlZYY1p3UndIS0wKWU1Db1VqZ2FFWHpXTElObHdwRm81b0pLVE9CZmxMTVVkR25QbnJDTnYxd29YOERMWnN1cEt2a1BhU3dCNkYydgowOEE3dk5rZWU4RjFUT1lHYW1lc0dNam5Sbi9BZ2RZeGtlTkx6cnJCL0tnZWtBWTlvekZoTnc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+---
+# Source: kubedb/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elevated-platypus-kubedb
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+---
+# Source: kubedb/templates/cluster-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: elevated-platypus-kubedb
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+rules:
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs: ["create", "delete", "get", "list"]
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  verbs: ["create", "delete", "get", "patch"]
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs: ["create", "delete", "get", "patch"]
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - serviceaccounts
+  verbs: ["create", "delete", "get", "patch"]
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs: ["create", "delete", "get", "patch", "update"]
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs: ["create", "delete", "get", "list", "watch"]
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs: ["get"]
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs: ["deletecollection", "get", "list", "patch", "watch"]
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs: ["create", "delete", "get", "list", "patch", "watch"]
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs: ["create", "delete", "get", "update"]
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs: ["create"]
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - kubedb.com
+  resources:
+  - '*'
+  verbs: ['*']
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs: ["create", "delete", "get", "list", "update"]
+---
+# Source: kubedb/templates/user-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedb:core:edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups:
+  - kubedb.com
+  resources:
+  - elasticsearches
+  - memcacheds
+  - mongodbs
+  - mysqls
+  - postgreses
+  - redises
+  - snapshots
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubedb.com
+  resources:
+  - dormantdatabases
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: kubedb/templates/user-roles.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubedb:core:view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups:
+  - kubedb.com
+  resources:
+  - dormantdatabases
+  - elasticsearches
+  - memcacheds
+  - mongodbs
+  - mysqls
+  - postgreses
+  - redises
+  - snapshots
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: kubedb/templates/user-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedb:core:admin
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+- apiGroups:
+  - kubedb.com
+  resources:
+  - dormantdatabases
+  - elasticsearches
+  - memcacheds
+  - mongodbs
+  - mysqls
+  - postgreses
+  - redises
+  - snapshots
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+# Source: kubedb/templates/apiregistration.yaml
+# to delegate authentication and authorization
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: elevated-platypus-kubedb-apiserver-auth-delegator
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: elevated-platypus-kubedb
+  namespace: default
+---
+# Source: kubedb/templates/cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: elevated-platypus-kubedb
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: elevated-platypus-kubedb
+subjects:
+- kind: ServiceAccount
+  name: elevated-platypus-kubedb
+  namespace: default
+---
+# Source: kubedb/templates/apiregistration.yaml
+# to read the config for terminating authentication
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: elevated-platypus-kubedb-apiserver-extension-server-authentication-reader
+  namespace: kube-system
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: extension-apiserver-authentication-reader
+subjects:
+- kind: ServiceAccount
+  name: elevated-platypus-kubedb
+  namespace: default
+---
+# Source: kubedb/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elevated-platypus-kubedb
+  labels:
+    app: "kubedb"
+    chart: "kubedb-0.1.3"
+    release: "elevated-platypus"
+    heritage: "Tiller"
+spec:
+  ports:
+  - name: api
+    port: 443
+    targetPort: 8443
+  selector:
+    app: "kubedb"
+    release: "elevated-platypus"
+---
+# Source: kubedb/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: elevated-platypus-kubedb
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+  initializers:
+    pending: []
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "kubedb"
+      release: "elevated-platypus"
+  template:
+    metadata:
+      labels:
+        app: "kubedb"
+        release: "elevated-platypus"
+    spec:
+      serviceAccountName: elevated-platypus-kubedb
+      containers:
+      - name: operator
+        image: kubedb/operator:0.8.0-beta.2
+        imagePullPolicy: IfNotPresent
+        args:
+        - run
+        - --v=3
+        - --docker-registry=kubedb
+        - --exporter-tag=0.8.0-beta.2
+        - --governing-service=kubedb
+        - --rbac=true
+        env:
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      - name: server
+        image: kubedb/kubedb-server:0.1.0-beta.2
+        imagePullPolicy: IfNotPresent
+        args:
+        - run
+        - --v=3
+        - --secure-port=8443
+        - --audit-log-path=-
+        - --tls-cert-file=/var/serving-cert/tls.crt
+        - --tls-private-key-file=/var/serving-cert/tls.key
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - mountPath: /var/serving-cert
+          name: serving-cert
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8443
+            scheme: HTTPS
+      volumes:
+      - name: serving-cert
+        secret:
+          defaultMode: 420
+          secretName: elevated-platypus-kubedb-apiserver-cert
+---
+# Source: kubedb/templates/apiregistration.yaml
+apiVersion: apiregistration.k8s.io/v1beta1
+kind: APIService
+metadata:
+  name: v1alpha1.admission.kubedb.com
+  labels:
+    chart: "kubedb-0.1.3"
+    app: "kubedb"
+    heritage: "Tiller"
+    release: "elevated-platypus"
+spec:
+  group: admission.kubedb.com
+  version: v1alpha1
+  service:
+    namespace: default
+    name: elevated-platypus-kubedb
+  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwemRtTXQKWTJGMExXTmhNQjRYRFRFNE1EWXdNakl5TURBeU1sb1hEVEk0TURVek1ESXlNREF5TWxvd0ZURVRNQkVHQTFVRQpBeE1LYzNaakxXTmhkQzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTUlLCjdrNlBzU2FjMkhhMzF2QVBKUVp0bmpOZkhocFVJQ0dkNThqK213bUc4cFhqSU8rT2VYYU5BenBPNFF3ZXpJblMKVVJBcTl4Z09QQmhiRFE4ZC94ZkJhNHIrM1R5dnRERWlVODQzdjZqeXZFclprQk5BaXBRR0Q5ZVlqVFN2dzllUQp4aW10NDVxdEJIZTN3c0pnOWZkMUs5MTVzU0txckswRWJMaDU5UkVwWTd6TlN3UUpZbDZOckdvMEp0Tjd0Rjd6Ck5UVEFhSHN3dll4QitoaG5xUzdSK3MyYkwybTJwazVqVlBIM0hwaWY2dktOK1hpYVY1YzMvZ0xpVkRFMUlBY1gKNUZoOE1XU2JNZnkrTFExbzhuUmZLenBaZDFXTk9vbGljTjluVy9WSy9WUDRqRkIyU2dUZ2hsRHRFSTEzT1MxbQp3WW5TVFBWemZMTnd1b2luVjdNQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUIwR0ExVWRKUVFXCk1CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC9NQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFCZm12Ymx4UGR0NEsxZ1E5c1FhZUNrQkZmMUMzL3JOSzlRcHJZWFd5Wm5EUllWaVZ2bgpBSHZGMW1ramJCQnVPLzh3WjQydnZYZXB5eU43TjZlNE9NZnVpT2trdVJkTldPZDlxSGYwNlVIYUhETmlGOEh6Ck9Dc3pKamx0TmtJSVRFSFBEZCtpc3FPTzMyZjdocXoxZUJNWnJGR3hreXJXdU5HQWxmR25WalJ4UVNkUHJFenYKcFlkV2w2ZjVpZVc4aTVDaG1pamYyaDFtcEF2T1BlcVluVVQ3bjk0SWIrbDJIeEJTV09VOCtxdTNibHlSMFpLaQpEdEdGT081cFhwUmJRdm95b0xDUEhQUWp3MythR3k2bzBRbXpSYWxIamZrWlVRa2hGZTFqS2RSam9aWWZOcE9UClc4SWZaUHdhclVUQ0JoWVk5WlVRNUhjaUNRMHJuT2lhcm9FSgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  groupPriorityMinimum: 10000
+  versionPriority: 15

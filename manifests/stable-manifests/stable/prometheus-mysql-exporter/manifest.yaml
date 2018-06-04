@@ -1,0 +1,67 @@
+
+---
+# Source: prometheus-mysql-exporter/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: honking-tuatara-prometheus-mysql-exporter
+  labels:
+    app: prometheus-mysql-exporter
+    chart: prometheus-mysql-exporter-0.1.0
+    release: honking-tuatara
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9104
+      targetPort: 9104
+      protocol: TCP
+      name: mysql-exporter
+  selector:
+    app: prometheus-mysql-exporter
+    release: honking-tuatara
+---
+# Source: prometheus-mysql-exporter/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: honking-tuatara-prometheus-mysql-exporter
+  labels:
+    app: prometheus-mysql-exporter
+    chart: prometheus-mysql-exporter-0.1.0
+    release: honking-tuatara
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-mysql-exporter
+      release: honking-tuatara
+  template:
+    metadata:
+      labels:
+        app: prometheus-mysql-exporter
+        release: honking-tuatara
+      annotations:
+        {}
+        
+    spec:
+      containers:
+        - name: prometheus-mysql-exporter
+          image: "prom/mysqld-exporter:v0.10.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATA_SOURCE_NAME
+              value: username:password@(localhost:3306)/
+          ports:
+            - containerPort: 9104
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9104
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9104
+          resources:
+            {}

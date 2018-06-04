@@ -1,0 +1,82 @@
+[debug] Created tunnel using local port: '34743'
+
+[debug] SERVER: "127.0.0.1:34743"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/sumologic-fluentd
+
+NAME:   toned-tapir
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:36 2018
+CHART: sumologic-fluentd-0.5.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  name: sumologic/fluentd-kubernetes-sumologic
+  pullPolicy: IfNotPresent
+  tag: v1.15
+persistence:
+  createPath: false
+  enabled: false
+  hostPath: /var/run/fluentd-pos
+podAnnotations: {}
+rbac:
+  create: false
+  serviceAccountName: default
+resources:
+  limits:
+    cpu: 256m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+sumologic:
+  addTimeStamp: true
+  auditLogPath: ""
+  collectorUrl: ""
+  concatSeparator: ""
+  excludeContainerRegex: ""
+  excludeFacilityRegex: ""
+  excludeHostRegex: ""
+  excludeNamespaceRegex: ""
+  excludePath: ""
+  excludePodRegex: ""
+  excludePriorityRegex: ""
+  excludeUnitRegex: ""
+  fluentdOpt: ""
+  fluentdSource: file
+  fluentdUserConfigDir: ""
+  kubernetesMeta: true
+  logFormat: json
+  multilineStartRegexp: ""
+  readFromHead: true
+  sourceCategory: ""
+  sourceCategoryPrefix: ""
+  sourceCategoryReplaceDash: ""
+  sourceHost: ""
+  sourceName: ""
+  verifySsl: true
+tolerations: []
+updateStrategy: OnDelete
+
+HOOKS:
+---
+# toned-tapir-sumologic-fluentd-secrets-1527976836
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "toned-tapir-sumologic-fluentd-secrets-1527976836"
+  labels:
+    app: sumologic-fluentd
+    chart: "sumologic-fluentd-0.5.0"
+    release: "toned-tapir"
+    heritage: "Tiller"
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+type: Opaque
+data:
+  collector-url: "TUlTU0lORw=="
+MANIFEST:
+

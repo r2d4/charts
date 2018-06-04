@@ -1,0 +1,71 @@
+[debug] Created tunnel using local port: '34721'
+
+[debug] SERVER: "127.0.0.1:34721"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/elastalert
+
+NAME:   cold-pronghorn
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:16 2018
+CHART: elastalert-0.3.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+bufferTimeMins: 15
+elasticsearch:
+  host: ""
+  port: 80
+  useSsl: "False"
+image:
+  pullPolicy: IfNotPresent
+  repository: jertel/elastalert-docker
+  tag: 0.1.30
+replicaCount: 1
+resources: {}
+revisionHistoryLimit: 5
+rules: {}
+runIntervalMins: 1
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: elastalert/templates/config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cold-pronghorn-elastalert-config
+  labels:
+    app: elastalert
+    chart: elastalert-0.3.0
+    release: cold-pronghorn
+    heritage: Tiller
+data:
+  elastalert_config: |-
+    ---
+    rules_folder: /opt/rules
+    scan_subdirectories: false
+    run_every:
+      minutes: 1
+    buffer_time:
+      minutes: 15
+    es_host: 
+    es_port: 80
+    writeback_index: elastalert_status
+    use_ssl: False
+    alert_time_limit:
+      days: 2
+---
+# Source: elastalert/templates/rules.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cold-pronghorn-elastalert-rules
+  labels:
+    app: elastalert
+    chart: elastalert-0.3.0
+    release: cold-pronghorn
+    heritage: Tiller
+data:

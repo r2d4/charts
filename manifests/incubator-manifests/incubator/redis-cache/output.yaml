@@ -1,0 +1,161 @@
+[debug] Created tunnel using local port: '42135'
+
+[debug] SERVER: "127.0.0.1:42135"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/redis-cache
+
+NAME:   voting-greyhound
+REVISION: 1
+RELEASED: Sat Jun  2 14:59:00 2018
+CHART: redis-cache-0.3.3
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+antiAffinity: hard
+makeSlave:
+  image:
+    pullPolicy: IfNotPresent
+    repository: dhilipkumars/mk-redis-slave
+    tag: 0.1.0
+  resources: {}
+microSentinel:
+  image:
+    pullPolicy: IfNotPresent
+    repository: dhilipkumars/redis-sentinel-k8s
+    tag: 0.1.0
+  resources: {}
+podDisruptionBudget:
+  minAvailable: 2
+redis:
+  image:
+    pullPolicy: IfNotPresent
+    repository: redis
+    tag: 3.0-alpine
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      memory: 128Mi
+replicaCount: 3
+service:
+  name: rd-port
+  port: 6379
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: redis-cache/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: voting-greyhound-redis-cache
+  labels:
+    app: redis-cache
+    chart: "redis-cache-0.3.3"
+    release: "voting-greyhound"
+    heritage: "Tiller"
+spec:
+  ports:
+  - port: 6379
+    name: rd-port
+  clusterIP: None
+  selector:
+    app: redis-cache
+---
+# Source: redis-cache/templates/ss.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: "voting-greyhound-redis-cache"
+  labels:
+     app: redis-cache
+     chart: "redis-cache-0.3.3"
+     release: "voting-greyhound"
+     heritage: "Tiller"
+spec:
+  serviceName: "voting-greyhound-redis-cache"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+        chart: "redis-cache-0.3.3"
+        release: "voting-greyhound"
+        heritage: "Tiller"
+    spec:
+      terminationGracePeriodSeconds: 60 
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: "kubernetes.io/hostname"
+            labelSelector:
+              matchLabels:
+                app:  redis-cache
+                release: "voting-greyhound"
+      initContainers :
+      - name: sentinel-micro 
+        image: dhilipkumars/redis-sentinel-k8s:0.1.0
+        imagePullPolicy: IfNotPresent
+        args: ["-service",voting-greyhound-redis-cache]
+        resources:
+            {}
+            
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: "v1"
+                fieldPath: metadata.namespace
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      containers:
+      - name: redis
+        image: redis:3.0-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
+          name: rd-port
+        resources:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 128Mi
+            
+      - name: make-slave
+        image: dhilipkumars/mk-redis-slave:0.1.0
+        imagePullPolicy: IfNotPresent
+        resources:
+            {}
+            
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: "v1"
+                fieldPath: metadata.namespace
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      volumes:
+      - name: config
+        emptyDir: {}
+---
+# Source: redis-cache/templates/pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: voting-greyhound-redis-cache
+spec:
+  selector:
+    matchLabels:
+      app: redis-cache
+      chart: "redis-cache-0.3.3"
+      release: "voting-greyhound"
+      heritage: "Tiller"
+  minAvailable: 2

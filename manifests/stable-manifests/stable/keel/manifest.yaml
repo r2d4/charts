@@ -1,0 +1,57 @@
+
+---
+# Source: keel/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cautious-panda-keel
+  namespace: kube-system
+  labels:
+    app: keel
+    chart: "keel-0.3.0"
+    release: "cautious-panda"
+    heritage: "Tiller"
+---
+# Source: keel/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cautious-panda-keel
+  namespace: kube-system
+  labels:
+    app: keel
+    chart: keel-0.3.0
+    release: cautious-panda
+    heritage: Tiller
+  annotations:
+    kubernetes.io/service-account.name: keel
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: keel
+        release: cautious-panda
+    spec:
+      containers:
+        - name: keel
+          image: "keelhq/keel:0.8.3"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/keel"]
+          env:
+            # Enable polling
+            - name: POLL
+              value: "1"
+          ports:
+            - containerPort: 9300
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9300
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+          resources:
+            null
+            
+      nodeSelector:
+        {}

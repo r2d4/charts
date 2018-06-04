@@ -1,0 +1,93 @@
+[debug] Created tunnel using local port: '38045'
+
+[debug] SERVER: "127.0.0.1:38045"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/sumokube
+
+NAME:   lumpy-alligator
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:36 2018
+CHART: sumokube-0.1.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+daemonset:
+  tolerations: []
+image:
+  name: sumologic/collector
+  pullPolicy: IfNotPresent
+  tag: latest
+resources:
+  limits:
+    cpu: 256m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+sumologic:
+  collectorName: kubernetes-collector
+
+HOOKS:
+---
+# lumpy-alligator-sumokube-secrets-1527976836
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "lumpy-alligator-sumokube-secrets-1527976836"
+  labels:
+    app: lumpy-alligator-sumokube
+    chart: "sumokube-0.1.4"
+    release: "lumpy-alligator"
+    heritage: "Tiller"
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+type: Opaque
+data:
+  access-id: "TUlTU0lORw=="
+  access-key: "TUlTU0lORw=="
+  collector-name: "a3ViZXJuZXRlcy1jb2xsZWN0b3I="
+---
+# lumpy-alligator-sumokube-config-1527976836
+apiVersion: v1
+kind: ConfigMap
+metadata:
+metadata:
+  name: "lumpy-alligator-sumokube-config-1527976836"
+  labels:
+    app: lumpy-alligator-sumokube
+    chart: "sumokube-0.1.4"
+    release: "lumpy-alligator"
+    heritage: "Tiller"
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+data:
+  sumo-sources.json: |-
+    {
+      "api.version": "v1",
+      "sources": [
+        {
+          "sourceType" : "LocalFile",
+          "name": "kubernetes-localfile",
+          "pathExpression": "/var/log/containers/*.log",
+          "multilineProcessingEnabled": false,
+          "automaticDateParsing": true,
+          "category": "kubernetes",
+          "forceTimeZone": false
+        }
+      ]
+    }
+MANIFEST:
+
+---
+# Source: sumokube/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lumpy-alligator-sumokube
+  labels:
+    app: lumpy-alligator-sumokube
+    chart: "sumokube-0.1.4"
+    release: "lumpy-alligator"
+    heritage: "Tiller"

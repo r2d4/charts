@@ -1,0 +1,342 @@
+[debug] Created tunnel using local port: '40555'
+
+[debug] SERVER: "127.0.0.1:40555"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/neo4j
+
+NAME:   calico-rodent
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:27 2018
+CHART: neo4j-0.7.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+acceptLicenseAgreement: "no"
+authEnabled: true
+core:
+  initContainers: []
+  numberOfServers: 3
+  persistentVolume:
+    mountPath: /data
+    size: 10Gi
+  sidecarContainers: []
+image: neo4j
+imagePullPolicy: IfNotPresent
+imageTag: 3.3.4-enterprise
+name: neo4j
+podDisruptionBudget: {}
+readReplica:
+  initContainers: []
+  numberOfServers: 0
+  sidecarContainers: []
+resources: {}
+testImage: markhneedham/k8s-kubectl
+testImageTag: master
+
+HOOKS:
+---
+# calico-rodent-neo4j-service-test-koyho
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "calico-rodent-neo4j-service-test-koyho"
+  labels:
+    heritage: Tiller
+    release: calico-rodent
+    chart: neo4j-0.7.2
+    app: neo4j
+  annotations:
+    "helm.sh/hook": test-success
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+spec:
+  containers:
+    - name: calico-rodent-ui-test
+      image: markhneedham/k8s-kubectl:master
+      env:
+        - name: "STATEFULSET_NAME"
+          value: "calico-rodent-neo4j"
+        - name: "CORE_REPLICAS"
+          value: "3"
+        - name: "NAMESPACE"
+          value: default
+        - name: NEO4J_SECRETS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: calico-rodent-neo4j-secrets
+              key: neo4j-password
+      command: ["/tools/bats/bats", "-t", "/tests/run.sh"]
+      volumeMounts:
+      - mountPath: /tests
+        name: tests
+        readOnly: true
+      - mountPath: /tools
+        name: tools
+  initContainers:
+  - name: test-framework
+    image: "dduportal/bats:0.4.0"
+    command: ["bash", "-c", "set -ex\ncp -R /usr/local/libexec/ /tools/bats/"]
+    volumeMounts:
+      - mountPath: "/tools"
+        name: tools
+  volumes:
+  - name: tests
+    configMap:
+      name: calico-rodent-neo4j-tests
+  - name: tools
+    emptyDir: {}
+  restartPolicy: Never
+MANIFEST:
+
+---
+# Source: neo4j/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: calico-rodent-neo4j-secrets
+  labels:
+    app: neo4j
+    chart: "neo4j-0.7.2"
+    heritage: "Tiller"
+    release: "calico-rodent"
+type: Opaque
+data:
+  neo4j-password: "clNuZTl4OW5Qeg=="
+---
+# Source: neo4j/templates/tests/test-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calico-rodent-neo4j-tests
+  labels:
+    heritage: Tiller
+    release: calico-rodent
+    chart: neo4j-0.7.2
+    app: neo4j
+data:
+  run.sh: |-
+    @test "Testing Neo4j cluster has quorum" {
+      echo "checking if the cluster is up"
+      path="data"
+      for id in $(seq 0 $((CORE_REPLICAS - 1))); do
+        host="${STATEFULSET_NAME}-core-$id.${STATEFULSET_NAME}.${NAMESPACE}.svc.cluster.local"
+        auth="neo4j:${NEO4J_SECRETS_PASSWORD}"
+        url="http://${auth}@${host}:7474/db/${path}"
+        attempts=10
+        attempt=0
+        while true; do
+          attempt=$[$attempt + 1]
+          echo "Try $attempt: Connecting to $host:7474/db/${path}"
+          run wget ${url} -qO- 2>&1
+          echo "Exit code: $status"
+          [ $status -eq 0 ] && break
+          [ "${attempt}" -ge "${attempts}" ] && exit 1
+          sleep 5
+        done
+      done
+    }
+
+    @test "Testing Neo4j core servers are available" {
+      echo "checking if nodes are available"
+      path="manage/server/core/available"
+      for id in $(seq 0 $((CORE_REPLICAS - 1))); do
+        host="${STATEFULSET_NAME}-core-$id.${STATEFULSET_NAME}.${NAMESPACE}.svc.cluster.local"
+        auth="neo4j:${NEO4J_SECRETS_PASSWORD}"
+        url="http://${auth}@${host}:7474/db/${path}"
+        attempts=10
+        attempt=0
+        while true; do
+          attempt=$[$attempt + 1]
+          echo "Try $attempt: Connecting to $host:7474/db/${path}"
+          response=$(wget ${url} -qO- 2>&1)
+          [ "$response" = "true" ] && break
+          [ "${attempt}" -ge "${attempts}" ] && exit 1
+          sleep 5
+        done
+      done
+    }
+---
+# Source: neo4j/templates/core-dns.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: calico-rodent-neo4j
+  labels:
+    heritage: "Tiller"
+    release: "calico-rodent"
+    chart: "neo4j-0.7.2"
+    app: neo4j
+    component: core
+spec:
+  clusterIP: None
+  ports:
+    - port: 7474
+      targetPort: 7474
+  selector:
+    app: neo4j
+    release: "calico-rodent"
+    component: core
+---
+# Source: neo4j/templates/readreplicas-deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: "calico-rodent-neo4j-replica"
+  labels:
+    heritage: "Tiller"
+    release: "calico-rodent"
+    chart: neo4j-0.7.2
+    app: neo4j
+    component: replica
+spec:
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: neo4j
+        release: "calico-rodent"
+        component: replica
+    spec:
+      containers:
+      - name: neo4j
+        image: "neo4j:3.3.4-enterprise"
+        imagePullPolicy: "IfNotPresent"
+        env:
+          - name: NEO4J_dbms_mode
+            value: READ_REPLICA
+          - name: NEO4J_dbms_security_auth__enabled
+            value: "true"
+          - name: NEO4J_causal__clustering_discovery__type
+            value: DNS
+          - name: NEO4J_causal__clustering_initial__discovery__members
+            value: "calico-rodent-neo4j.default.svc.cluster.local:5000"
+          - name: NEO4J_SECRETS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: calico-rodent-neo4j-secrets
+                key: neo4j-password
+        command:
+          - "/bin/bash"
+          - "-c"
+          - |
+            export NEO4J_dbms_connectors_default__advertised__address=$(hostname -f)
+            export NEO4J_causal__clustering_transaction__advertised__address=$(hostname -f):6000
+
+            if [ "${AUTH_ENABLED:-}" == "true" ]; then
+              export NEO4J_AUTH="neo4j/${NEO4J_SECRETS_PASSWORD}"
+            else
+              export NEO4J_AUTH="none"
+            fi
+
+            exec /docker-entrypoint.sh "neo4j"
+        ports:
+        - containerPort: 7474
+          name: browser
+        - containerPort: 7687
+          name: bolt
+        - containerPort: 6000
+          name: tx
+        volumeMounts:
+        - name: plugins
+          mountPath: /plugins
+        securityContext:
+          privileged: true
+      volumes:
+        - name: plugins
+          emptyDir: {}
+---
+# Source: neo4j/templates/core-statefulset.yaml
+apiVersion: "apps/v1beta2"
+kind: StatefulSet
+metadata:
+  name: "calico-rodent-neo4j-core"
+spec:
+  serviceName: calico-rodent-neo4j
+  replicas: 3
+  selector:
+    matchLabels:
+      release: "calico-rodent"
+      app: neo4j
+      component: core
+  template:
+    metadata:
+      labels:
+        heritage: "Tiller"
+        release: "calico-rodent"
+        chart: "neo4j-0.7.2"
+        app: neo4j
+        component: core
+    spec:
+      containers:
+      - name: calico-rodent-neo4j
+        image: "neo4j:3.3.4-enterprise"
+        imagePullPolicy: "IfNotPresent"
+        env:
+          - name: NEO4J_ACCEPT_LICENSE_AGREEMENT
+            value: "no"
+          - name: NEO4J_dbms_mode
+            value: CORE
+          - name: NUMBER_OF_CORES
+            value: "3"
+          - name: AUTH_ENABLED
+            value: "true"
+          - name: NEO4J_causal__clustering_discovery__type
+            value: DNS
+          - name: NEO4J_causal__clustering_initial__discovery__members
+            value: "calico-rodent-neo4j.default.svc.cluster.local:5000"
+          - name: NEO4J_SECRETS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: calico-rodent-neo4j-secrets
+                key: neo4j-password
+        command:
+          - "/bin/bash"
+          - "-c"
+          - |
+            export NEO4J_dbms_connectors_default__advertised__address=$(hostname -f)
+            export NEO4J_causal__clustering_discovery__advertised__address=$(hostname -f):5000
+            export NEO4J_causal__clustering_transaction__advertised__address=$(hostname -f):6000
+            export NEO4J_causal__clustering_raft__advertised__address=$(hostname -f):7000
+
+            if [ "${AUTH_ENABLED:-}" == "true" ]; then
+              export NEO4J_AUTH="neo4j/${NEO4J_SECRETS_PASSWORD}"
+            else
+              export NEO4J_AUTH="none"
+            fi
+
+            exec /docker-entrypoint.sh "neo4j"
+        ports:
+        - containerPort: 5000
+          name: discovery
+        - containerPort: 7000
+          name: raft
+        - containerPort: 6000
+          name: tx
+        - containerPort: 7474
+          name: browser
+        - containerPort: 7687
+          name: bolt
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: datadir
+          mountPath: "/data"
+        - name: plugins
+          mountPath: /plugins
+        resources:
+          {}
+          
+      volumes:
+        - name: plugins
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+        annotations:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "10Gi"

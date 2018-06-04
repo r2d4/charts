@@ -1,0 +1,165 @@
+[debug] Created tunnel using local port: '34919'
+
+[debug] SERVER: "127.0.0.1:34919"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/selenium
+
+NAME:   wrinkled-scorpion
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:33 2018
+CHART: selenium-0.3.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+chrome:
+  enabled: false
+  image: selenium/node-chrome
+  javaOpts: -Xmx900m
+  nodeSelector: null
+  pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    limits:
+      cpu: ".5"
+      memory: 1000Mi
+  tag: 3.11.0
+  volumeMounts:
+  - mountPath: /dev/shm
+    name: dshm
+  volumes:
+  - emptyDir:
+      medium: Memory
+    name: dshm
+chromeDebug:
+  enabled: false
+  image: selenium/node-chrome-debug
+  javaOpts: -Xmx900m
+  nodeSelector: null
+  pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    limits:
+      cpu: ".5"
+      memory: 1500Mi
+  tag: 3.11.0
+  volumeMounts:
+  - mountPath: /dev/shm
+    name: dshm
+  volumes:
+  - emptyDir:
+      medium: Memory
+    name: dshm
+firefox:
+  enabled: false
+  image: selenium/node-firefox
+  javaOpts: -Xmx900m
+  nodeSelector: null
+  pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    limits:
+      cpu: ".5"
+      memory: 1000Mi
+  tag: 3.11.0
+firefoxDebug:
+  enabled: false
+  image: selenium/node-firefox-debug
+  javaOpts: -Xmx900m
+  nodeSelector: null
+  pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    limits:
+      cpu: ".5"
+      memory: 1500Mi
+  tag: 3.11.0
+global:
+  nodeSelector: null
+hub:
+  image: selenium/hub
+  javaOpts: -Xmx400m
+  nodeSelector: null
+  port: 4444
+  pullPolicy: IfNotPresent
+  readinessTimeout: 1
+  resources:
+    limits:
+      cpu: ".5"
+      memory: 512Mi
+  serviceSessionAffinity: None
+  serviceType: LoadBalancer
+  tag: 3.11.0
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: selenium/templates/hub-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wrinkled-scorpion-selenium-hub
+  labels:
+    app: wrinkled-scorpion-selenium-hub
+    chart: "selenium-0.3.1"
+    release: "wrinkled-scorpion"
+    heritage: "Tiller"
+spec:
+  type: "LoadBalancer"
+  sessionAffinity: "None"
+  ports:
+  - name: hub
+    port: 4444
+    targetPort: 4444
+  selector:
+    app: wrinkled-scorpion-selenium-hub
+---
+# Source: selenium/templates/hub-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wrinkled-scorpion-selenium-hub
+  labels:
+    chart: "selenium-0.3.1"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wrinkled-scorpion-selenium-hub
+        chart: "selenium-0.3.1"
+        release: "wrinkled-scorpion"
+        heritage: "Tiller"
+      annotations: 
+    spec:
+      containers:
+        - name: selenium
+          image: "selenium/hub:3.11.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4444
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /grid/console
+              port: 4444
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /grid/console
+              port: 4444
+            timeoutSeconds: 1
+          env:
+            - name: JAVA_OPTS
+              value: "-Xmx400m"
+            - name: SE_OPTS
+              value: ""
+          resources:
+            limits:
+              cpu: ".5"
+              memory: 512Mi
+            
+      nodeSelector:

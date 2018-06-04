@@ -1,0 +1,124 @@
+
+---
+# Source: traefik/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prodding-iguana-traefik
+  labels:
+    app: traefik
+    chart: "traefik-1.31.1"
+    release: "prodding-iguana"
+    heritage: "Tiller"
+data:
+  traefik.toml: |
+    # traefik.toml
+    logLevel = "INFO"
+    defaultEntryPoints = ["http", "httpn"]
+    [entryPoints]
+      [entryPoints.http]
+      address = ":80"
+      compress = true
+      [entryPoints.httpn]
+      address = ":8880"
+      compress = true
+    [kubernetes]
+---
+# Source: traefik/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: prodding-iguana-traefik
+  labels:
+    app: traefik
+    chart: "traefik-1.31.1"
+    release: "prodding-iguana"
+    heritage: "Tiller"
+  annotations:
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app: traefik
+    release: prodding-iguana     
+  ports:
+  - port: 80
+    name: http
+    targetPort: http
+  - port: 443
+    name: https
+    targetPort: httpn
+---
+# Source: traefik/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: prodding-iguana-traefik
+  labels:
+    app: traefik
+    chart: "traefik-1.31.1"
+    release: "prodding-iguana"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+      release: prodding-iguana
+  template:
+    metadata:
+      annotations:
+        checksum/config: 7a271a9cab4c81c5dcf0e70d09b2262c9b7bda737e47cf61d5187e1f2bd0055c
+      labels:
+        app: traefik
+        chart: "traefik-1.31.1"
+        release: "prodding-iguana"
+        heritage: "Tiller"
+    spec:
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 60
+      containers:
+      - image: traefik:1.6.2
+        name: prodding-iguana-traefik
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "20Mi"
+          limits:
+            cpu: "100m"
+            memory: "30Mi"
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          failureThreshold: 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+        livenessProbe:
+          tcpSocket:
+            port: 80
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: httpn
+          containerPort: 8880
+          protocol: TCP
+        - name: https
+          containerPort: 443
+          protocol: TCP
+        args:
+        - --configfile=/config/traefik.toml
+      volumes:
+      - name: config
+        configMap:
+          name: prodding-iguana-traefik

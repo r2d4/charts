@@ -1,0 +1,128 @@
+[debug] Created tunnel using local port: '36771'
+
+[debug] SERVER: "127.0.0.1:36771"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/external-dns
+
+NAME:   donating-badger
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:17 2018
+CHART: external-dns-0.6.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+annotationFilter: ""
+aws:
+  accessKey: ""
+  region: us-east-1
+  roleArn: ""
+  secretKey: ""
+  zoneType: ""
+cloudflare:
+  apiKey: ""
+  email: ""
+domainFilters: []
+extraArgs: {}
+extraEnv: {}
+google:
+  project: ""
+  serviceAccountSecret: ""
+image:
+  name: registry.opensource.zalan.do/teapot/external-dns
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+  tag: v0.5.0
+logLevel: info
+nodeSelector: {}
+podAnnotations: {}
+podLabels: {}
+policy: upsert-only
+provider: aws
+publishInternalServices: false
+rbac:
+  apiVersion: v1beta1
+  create: false
+  serviceAccountName: default
+registry: txt
+resources: {}
+service:
+  annotations: {}
+  clusterIP: ""
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  servicePort: 7979
+  type: ClusterIP
+sources:
+- service
+- ingress
+tolerations: []
+txtOwnerId: ""
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: external-dns/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: external-dns
+    chart: external-dns-0.6.1
+    heritage: Tiller
+    release: donating-badger
+  name: donating-badger-external-dns
+spec:
+  ports:
+    - port: 7979
+      protocol: TCP
+      targetPort: 7979
+  selector:
+    app: external-dns
+    release: donating-badger
+  type: "ClusterIP"
+---
+# Source: external-dns/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:     
+    app: external-dns
+    heritage: Tiller
+    release: donating-badger
+    chart: external-dns-0.6.1
+  name: donating-badger-external-dns
+spec:
+  template:
+    metadata:
+      labels:         
+        app: external-dns
+        heritage: Tiller
+        release: donating-badger
+    spec:
+      containers:
+        - name: external-dns
+          image: "registry.opensource.zalan.do/teapot/external-dns:v0.5.0"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - --log-level=info
+            - --policy=upsert-only
+            - --provider=aws
+            - --registry=txt
+            - --source=service
+            - --source=ingress
+          volumeMounts:
+          env:
+          - name: AWS_DEFAULT_REGION
+            value: us-east-1
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 7979
+          ports:
+            - containerPort: 7979
+      volumes:
+      serviceAccountName: "default"

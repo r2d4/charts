@@ -1,0 +1,69 @@
+
+---
+# Source: selenium/templates/hub-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wrinkled-scorpion-selenium-hub
+  labels:
+    app: wrinkled-scorpion-selenium-hub
+    chart: "selenium-0.3.1"
+    release: "wrinkled-scorpion"
+    heritage: "Tiller"
+spec:
+  type: "LoadBalancer"
+  sessionAffinity: "None"
+  ports:
+  - name: hub
+    port: 4444
+    targetPort: 4444
+  selector:
+    app: wrinkled-scorpion-selenium-hub
+---
+# Source: selenium/templates/hub-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wrinkled-scorpion-selenium-hub
+  labels:
+    chart: "selenium-0.3.1"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wrinkled-scorpion-selenium-hub
+        chart: "selenium-0.3.1"
+        release: "wrinkled-scorpion"
+        heritage: "Tiller"
+      annotations: 
+    spec:
+      containers:
+        - name: selenium
+          image: "selenium/hub:3.11.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4444
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /grid/console
+              port: 4444
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /grid/console
+              port: 4444
+            timeoutSeconds: 1
+          env:
+            - name: JAVA_OPTS
+              value: "-Xmx400m"
+            - name: SE_OPTS
+              value: ""
+          resources:
+            limits:
+              cpu: ".5"
+              memory: 512Mi
+            
+      nodeSelector:

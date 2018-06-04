@@ -1,0 +1,71 @@
+[debug] Created tunnel using local port: '45819'
+
+[debug] SERVER: "127.0.0.1:45819"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/dmarc2logstash
+
+NAME:   exiled-cheetah
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:16 2018
+CHART: dmarc2logstash-1.0.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+dmarc2logstash:
+  affinity: {}
+  image:
+    pullPolicy: IfNotPresent
+    repository: jertel/dmarc2logstash
+    tag: 1.0.1
+  nodeSelector: {}
+  resources: {}
+  tolerations: []
+filebeat:
+  image:
+    pullPolicy: IfNotPresent
+    repository: docker.elastic.co/beats/filebeat
+    tag: 6.2.1
+  logstash:
+    host: ""
+    index: dmarc
+    port: 5000
+    sourceType: json-logs
+    timeout: 15
+  resources: {}
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: dmarc2logstash/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: exiled-cheetah-dmarc2logstash-config
+  labels:
+    app: dmarc2logstash
+    chart: dmarc2logstash-1.0.0
+    heritage: Tiller
+    release: exiled-cheetah
+data:
+  filebeat.yml: |
+    filebeat.registry_file: /tmp/filebeat_registry
+    filebeat.prospectors:
+    - type: log
+      enabled: true
+      paths:
+        - "/app/log/forward/*.log"
+      json.keys_under_root: true
+      json.add_error_key: true
+      fields_under_root: true
+      fields:
+        source_type: 
+    output.logstash:
+      hosts: 
+        - :5000
+      index: dmarc
+      timeout: 15
+
+    logging.level: info

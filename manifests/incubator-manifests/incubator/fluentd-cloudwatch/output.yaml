@@ -1,0 +1,404 @@
+[debug] Created tunnel using local port: '44357'
+
+[debug] SERVER: "127.0.0.1:44357"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/fluentd-cloudwatch
+
+NAME:   honking-aardwolf
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:58 2018
+CHART: fluentd-cloudwatch-0.4.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+annotations: {}
+awsRegion: us-east-1
+awsRole: null
+fluentdConfig: |
+  <match fluent.**>
+    type null
+  </match>
+
+  <source>
+    type tail
+    path /var/log/containers/*.log
+    pos_file /var/log/fluentd-containers.log.pos
+    time_format %Y-%m-%dT%H:%M:%S.%NZ
+    tag kubernetes.*
+    format json
+    read_from_head true
+  </source>
+
+  <source>
+    type tail
+    format /^(?<time>[^ ]* [^ ,]*)[^\[]*\[[^\]]*\]\[(?<severity>[^ \]]*) *\] (?<message>.*)$/
+    time_format %Y-%m-%d %H:%M:%S
+    path /var/log/salt/minion
+    pos_file /var/log/fluentd-salt.pos
+    tag salt
+  </source>
+
+  <source>
+    type tail
+    format syslog
+    path /var/log/startupscript.log
+    pos_file /var/log/fluentd-startupscript.log.pos
+    tag startupscript
+  </source>
+
+  <source>
+    type tail
+    format /^time="(?<time>[^)]*)" level=(?<severity>[^ ]*) msg="(?<message>[^"]*)"( err="(?<error>[^"]*)")?( statusCode=($<status_code>\d+))?/
+    path /var/log/docker.log
+    pos_file /var/log/fluentd-docker.log.pos
+    tag docker
+  </source>
+
+  <source>
+    type tail
+    format none
+    path /var/log/etcd.log
+    pos_file /var/log/fluentd-etcd.log.pos
+    tag etcd
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/kubelet.log
+    pos_file /var/log/fluentd-kubelet.log.pos
+    tag kubelet
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/kube-proxy.log
+    pos_file /var/log/fluentd-kube-proxy.log.pos
+    tag kube-proxy
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/kube-apiserver.log
+    pos_file /var/log/fluentd-kube-apiserver.log.pos
+    tag kube-apiserver
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/kube-controller-manager.log
+    pos_file /var/log/fluentd-kube-controller-manager.log.pos
+    tag kube-controller-manager
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/kube-scheduler.log
+    pos_file /var/log/fluentd-kube-scheduler.log.pos
+    tag kube-scheduler
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/rescheduler.log
+    pos_file /var/log/fluentd-rescheduler.log.pos
+    tag rescheduler
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/glbc.log
+    pos_file /var/log/fluentd-glbc.log.pos
+    tag glbc
+  </source>
+
+  <source>
+    type tail
+    format kubernetes
+    multiline_flush_interval 5s
+    path /var/log/cluster-autoscaler.log
+    pos_file /var/log/fluentd-cluster-autoscaler.log.pos
+    tag cluster-autoscaler
+  </source>
+
+  <filter kubernetes.**>
+    type kubernetes_metadata
+  </filter>
+
+  <match **>
+    type cloudwatch_logs
+    log_group_name "#{ENV['LOG_GROUP_NAME']}"
+    auto_create_stream true
+    use_tag_as_stream true
+  </match>
+image:
+  pullPolicy: IfNotPresent
+  repository: fluent/fluentd-kubernetes-daemonset
+  tag: v0.12.33-cloudwatch
+logGroupName: kubernetes
+rbac:
+  create: false
+  serviceAccountName: default
+resources:
+  limits:
+    cpu: 100m
+    memory: 200Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: fluentd-cloudwatch/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: honking-aardwolf-fluentd-cloudwatch
+  labels:
+    app: fluentd-cloudwatch
+    chart: fluentd-cloudwatch-0.4.1
+    heritage: Tiller
+    release: honking-aardwolf
+type: Opaque
+data:
+  aws_access_key_id: PEFXU19BQ0NFU1NfS0VZX0lEPgo=
+  aws_secret_access_key: PEFXU19TRUNSRVRfQUNDRVNTX0tFWT4K
+---
+# Source: fluentd-cloudwatch/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: honking-aardwolf-fluentd-cloudwatch
+  labels:
+    app: fluentd-cloudwatch
+    chart: "fluentd-cloudwatch-0.4.1"
+    heritage: "Tiller"
+    release: "honking-aardwolf"
+data:
+  fluent.conf:   |
+    <match fluent.**>
+      type null
+    </match>
+  
+    <source>
+      type tail
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      time_format %Y-%m-%dT%H:%M:%S.%NZ
+      tag kubernetes.*
+      format json
+      read_from_head true
+    </source>
+  
+    <source>
+      type tail
+      format /^(?<time>[^ ]* [^ ,]*)[^\[]*\[[^\]]*\]\[(?<severity>[^ \]]*) *\] (?<message>.*)$/
+      time_format %Y-%m-%d %H:%M:%S
+      path /var/log/salt/minion
+      pos_file /var/log/fluentd-salt.pos
+      tag salt
+    </source>
+  
+    <source>
+      type tail
+      format syslog
+      path /var/log/startupscript.log
+      pos_file /var/log/fluentd-startupscript.log.pos
+      tag startupscript
+    </source>
+  
+    <source>
+      type tail
+      format /^time="(?<time>[^)]*)" level=(?<severity>[^ ]*) msg="(?<message>[^"]*)"( err="(?<error>[^"]*)")?( statusCode=($<status_code>\d+))?/
+      path /var/log/docker.log
+      pos_file /var/log/fluentd-docker.log.pos
+      tag docker
+    </source>
+  
+    <source>
+      type tail
+      format none
+      path /var/log/etcd.log
+      pos_file /var/log/fluentd-etcd.log.pos
+      tag etcd
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/kubelet.log
+      pos_file /var/log/fluentd-kubelet.log.pos
+      tag kubelet
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/kube-proxy.log
+      pos_file /var/log/fluentd-kube-proxy.log.pos
+      tag kube-proxy
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/kube-apiserver.log
+      pos_file /var/log/fluentd-kube-apiserver.log.pos
+      tag kube-apiserver
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/kube-controller-manager.log
+      pos_file /var/log/fluentd-kube-controller-manager.log.pos
+      tag kube-controller-manager
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/kube-scheduler.log
+      pos_file /var/log/fluentd-kube-scheduler.log.pos
+      tag kube-scheduler
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/rescheduler.log
+      pos_file /var/log/fluentd-rescheduler.log.pos
+      tag rescheduler
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/glbc.log
+      pos_file /var/log/fluentd-glbc.log.pos
+      tag glbc
+    </source>
+  
+    <source>
+      type tail
+      format kubernetes
+      multiline_flush_interval 5s
+      path /var/log/cluster-autoscaler.log
+      pos_file /var/log/fluentd-cluster-autoscaler.log.pos
+      tag cluster-autoscaler
+    </source>
+  
+    <filter kubernetes.**>
+      type kubernetes_metadata
+    </filter>
+  
+    <match **>
+      type cloudwatch_logs
+      log_group_name "#{ENV['LOG_GROUP_NAME']}"
+      auto_create_stream true
+      use_tag_as_stream true
+    </match>
+---
+# Source: fluentd-cloudwatch/templates/daemonset.yaml
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: honking-aardwolf-fluentd-cloudwatch
+  labels:
+    app: fluentd-cloudwatch
+    chart: "fluentd-cloudwatch-0.4.1"
+    heritage: "Tiller"
+    release: "honking-aardwolf"
+spec:
+  template:
+    metadata:
+      labels:
+        app: fluentd-cloudwatch
+        release: "honking-aardwolf"
+      annotations:
+        
+    spec:
+      serviceAccountName: "default"
+      initContainers:
+        - name: copy-fluentd-config
+          image: busybox
+          command: ['sh', '-c', 'cp /config-volume/* /etc/fluentd']
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config-volume
+            - name: config
+              mountPath: /etc/fluentd
+      containers:
+      - name: honking-aardwolf-fluentd-cloudwatch
+        image: "fluent/fluentd-kubernetes-daemonset:v0.12.33-cloudwatch"
+        imagePullPolicy: "IfNotPresent"
+        #hostNetwork: false
+        env:
+        - name: AWS_REGION
+          value: us-east-1
+        - name: LOG_GROUP_NAME
+          value: kubernetes
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: aws_access_key_id
+              name: honking-aardwolf-fluentd-cloudwatch
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: aws_secret_access_key
+              name: honking-aardwolf-fluentd-cloudwatch
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: config
+          mountPath: /fluentd/etc
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: config
+        emptyDir: {}
+      - name: config-volume
+        configMap:
+          name: honking-aardwolf-fluentd-cloudwatch

@@ -1,0 +1,66 @@
+
+---
+# Source: chronograf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: foppish-dachshund-chronograf
+  labels:
+    app: foppish-dachshund-chronograf
+    chart: "chronograf-0.4.5"
+    release: "foppish-dachshund"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8888
+  selector:
+    app: foppish-dachshund-chronograf
+---
+# Source: chronograf/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: foppish-dachshund-chronograf
+  labels:
+    app: foppish-dachshund-chronograf
+    chart: "chronograf-0.4.5"
+    release: "foppish-dachshund"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: foppish-dachshund-chronograf
+    spec:
+      containers:
+      - name: chronograf
+        image: "docker.io/chronograf:1.3-alpine"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8888
+          name: api
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: api
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: api
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/chronograf
+        resources:
+          limits:
+            cpu: 2
+            memory: 2Gi
+          requests:
+            cpu: 0.1
+            memory: 256Mi
+          
+      volumes:
+        - name: data
+          emptyDir: {}

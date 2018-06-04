@@ -1,0 +1,152 @@
+[debug] Created tunnel using local port: '42843'
+
+[debug] SERVER: "127.0.0.1:42843"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/tensorflow-notebook
+
+NAME:   hazy-gnat
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:37 2018
+CHART: tensorflow-notebook-0.1.2
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+jupyter:
+  image:
+    pullPolicy: IfNotPresent
+    repository: tensorflow/tensorflow
+    tag: 1.6.0-devel
+  password: tensorflow
+  resources: {}
+service:
+  type: LoadBalancer
+tensorboard:
+  image:
+    pullPolicy: IfNotPresent
+    repository: tensorflow/tensorflow
+    tag: 1.6.0-devel
+
+HOOKS:
+---
+# hazy-gnat-tensorflow-notebook
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hazy-gnat-tensorflow-notebook
+  labels:
+    app: tensorflow-notebook
+    chart: tensorflow-notebook-0.1.2
+    release: hazy-gnat
+    heritage: Tiller
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+type: Opaque
+data:
+  password: "dGVuc29yZmxvdw=="
+MANIFEST:
+
+---
+# Source: tensorflow-notebook/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hazy-gnat-tensorflow-notebook
+  labels:
+    app: tensorflow-notebook
+    chart: tensorflow-notebook-0.1.2
+    release: hazy-gnat
+    heritage: Tiller
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 6006
+      targetPort: tensorboard
+      protocol: TCP
+      name: tensorboard
+    - port: 8888
+      targetPort: jupyter
+      protocol: TCP
+      name: jupyter
+  selector:
+    app: tensorflow-notebook
+    release: hazy-gnat
+---
+# Source: tensorflow-notebook/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: hazy-gnat-tensorflow-notebook
+  labels:
+    app: tensorflow-notebook
+    chart: tensorflow-notebook-0.1.2
+    release: hazy-gnat
+    heritage: Tiller
+spec:
+  selector:
+    matchLabels:
+      app: tensorflow-notebook
+      release: hazy-gnat
+  template:
+    metadata:
+      labels:
+        app: tensorflow-notebook
+        release: hazy-gnat
+    spec:
+      containers:
+        - name: jupyter
+          image: "tensorflow/tensorflow:1.6.0-devel"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8888
+              name: jupyter
+          command:
+            - jupyter
+          args:
+            - notebook
+            - --allow-root      
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hazy-gnat-tensorflow-notebook
+                  key: password
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8888
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8888
+          volumeMounts:
+            - mountPath: /output/training_logs
+              name: training-logs-volume
+        - name: tensorboard
+          image: "tensorflow/tensorflow:1.6.0-devel"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6006
+              name: tensorboard
+          command:
+            - tensorboard
+          args:
+            - --logdir
+            - /output/training_logs
+            - --host
+            - 0.0.0.0
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 6006
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 6006
+          volumeMounts:
+            - mountPath: /output/training_logs
+              name: training-logs-volume
+      volumes:
+        - name: training-logs-volume
+          emptyDir: {}

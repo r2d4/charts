@@ -1,0 +1,218 @@
+[debug] Created tunnel using local port: '39477'
+
+[debug] SERVER: "127.0.0.1:39477"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/vault
+
+NAME:   winning-zorse
+REVISION: 1
+RELEASED: Sat Jun  2 14:59:01 2018
+CHART: vault-0.10.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: |
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        topologyKey: kubernetes.io/hostname
+        labelSelector:
+          matchLabels:
+            app: {{ template "vault.fullname" . }}
+            release: {{ .Release.Name }}
+annotations: {}
+consulAgent:
+  HttpPort: 8500
+  pullPolicy: IfNotPresent
+  repository: consul
+  tag: 1.0.7
+image:
+  pullPolicy: IfNotPresent
+  repository: vault
+  tag: 0.10.1
+ingress:
+  enabled: false
+  labels: {}
+podAnnotations: {}
+replicaCount: 3
+resources: {}
+service:
+  annotations: {}
+  externalPort: 8200
+  name: vault
+  port: 8200
+  type: ClusterIP
+vault:
+  config:
+    listener:
+      tcp:
+        address: '[::]:8200'
+        cluster_address: '[::]:8201'
+        tls_cipher_suites: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA
+        tls_disable: true
+        tls_prefer_server_cipher_suites: true
+    storage: null
+  customSecrets: []
+  dev: true
+  extraEnv: {}
+  readiness:
+    readyIfSealed: false
+    readyIfStandby: true
+    readyIfUninitialized: true
+
+HOOKS:
+---
+# winning-zorse-vault-status-test
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "winning-zorse-vault-status-test"
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+  - name: winning-zorse-vault-status-test
+    image: "vault:0.10.1"
+    env:
+      - name: VAULT_ADDR
+        value: http://winning-zorse-vault.default:8200
+    command: ["sh", "-c", "vault status"]
+  restartPolicy: Never
+MANIFEST:
+
+---
+# Source: vault/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "winning-zorse-vault-config"
+  labels:
+    app: "vault"
+    release: "winning-zorse"
+    heritage: "Tiller"
+    chart: "vault-0.10.0"
+data:
+  config.json: |
+    {"listener":{"tcp":{"address":"[::]:8200","cluster_address":"[::]:8201","tls_cipher_suites":"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA","tls_disable":true,"tls_prefer_server_cipher_suites":true}},"storage":null}
+---
+# Source: vault/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: winning-zorse-vault
+  labels:
+    app: vault
+    chart: vault-0.10.0
+    release: winning-zorse
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8200
+    protocol: TCP
+    targetPort: 8200
+    name: api
+  selector:
+    app: vault
+    release: winning-zorse
+---
+# Source: vault/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: winning-zorse-vault
+  labels:
+    app: vault
+    chart: vault-0.10.0
+    release: winning-zorse
+    heritage: Tiller
+  annotations:
+    {}
+    
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: vault
+        release: winning-zorse
+      annotations:
+        {}
+        
+    spec:
+      containers:
+      - name: vault
+        image: "vault:0.10.1"
+        imagePullPolicy: IfNotPresent
+        command: ["vault", "server", "-dev", "-dev-listen-address", "[::]:8200"]
+        ports:
+        - containerPort: 8200
+          name: api
+        - containerPort: 8201
+          name: cluster-address
+        livenessProbe:
+          # Alive if it is listening for clustering traffic
+          tcpSocket:
+            port: 8200
+        readinessProbe:
+          # Ready depends on preference
+          httpGet:
+            path: /v1/sys/health?standbycode=204&uninitcode=204&
+            port: 8200
+            scheme: HTTP
+        securityContext:
+          readOnlyRootFilesystem: true
+          capabilities:
+            add:
+            - IPC_LOCK
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: VAULT_CLUSTER_ADDR
+            value: "https://$(POD_IP):8201"
+        volumeMounts:
+        - name: vault-config
+          mountPath: /vault/config/
+        - name: vault-root
+          mountPath: /root/
+        resources:
+          {}
+          
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: winning-zorse-vault
+                  release: winning-zorse
+        
+      volumes:
+        - name: vault-config
+          configMap:
+            name: "winning-zorse-vault-config"
+        - name: vault-root
+          emptyDir: {}
+---
+# Source: vault/templates/pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: winning-zorse-vault
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: vault
+      release: winning-zorse

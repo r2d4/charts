@@ -1,0 +1,304 @@
+
+---
+# Source: rabbitmq-ha/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: foolish-mole-rabbitmq-ha
+  labels:
+    app: rabbitmq-ha
+    chart: "rabbitmq-ha-1.6.0"
+    release: "foolish-mole"
+    heritage: "Tiller"
+type: Opaque
+data:
+  
+  rabbitmq-password: "QSdRfkwpZEVDY2AyK013PWlkPFs8ITla"
+  
+  
+  rabbitmq-erlang-cookie: "elNrTFlMUWFIM2swSHN4MUE1clY3ZGZISG1lZDJ0b2w="
+---
+# Source: rabbitmq-ha/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: foolish-mole-rabbitmq-ha
+  labels:
+    app: rabbitmq-ha
+    chart: rabbitmq-ha-1.6.0
+    release: foolish-mole
+    heritage: Tiller
+data:
+  enabled_plugins: |
+    [
+
+      rabbitmq_consistent_hash_exchange,
+      rabbitmq_federation,
+      rabbitmq_federation_management,
+      rabbitmq_management,
+      rabbitmq_peer_discovery_k8s,
+      rabbitmq_shovel,
+      rabbitmq_shovel_management
+    ].
+
+  rabbitmq.conf: |
+    ## RabbitMQ configuration
+    ## Ref: https://github.com/rabbitmq/rabbitmq-server/blob/master/docs/rabbitmq.conf.example
+
+    ## Authentification
+
+    ## Clustering
+    cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
+    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+    cluster_formation.k8s.address_type = hostname
+    cluster_formation.node_cleanup.interval = 10
+    # Set to false if automatic cleanup of absent nodes is desired.
+    # This can be dangerous, see http://www.rabbitmq.com/cluster-formation.html#node-health-checks-and-cleanup.
+    cluster_formation.node_cleanup.only_log_warning = true
+    cluster_partition_handling = autoheal
+
+    ## The default "guest" user is only permitted to access the server
+    ## via a loopback interface (e.g. localhost)
+    loopback_users.guest = false
+
+    ## Memory-based Flow Control threshold
+    vm_memory_high_watermark.absolute = 256MB
+
+    ## LDAP Plugin
+
+    ## MQTT Plugin
+
+    ## Web MQTT Plugin
+
+    ## STOMP Plugin
+
+    ## Web STOMP Plugin
+
+    ## AMQPS support
+---
+# Source: rabbitmq-ha/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: rabbitmq-ha
+    chart: "rabbitmq-ha-1.6.0"
+    release: "foolish-mole"
+    heritage: "Tiller"
+  name: foolish-mole-rabbitmq-ha
+---
+# Source: rabbitmq-ha/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  labels:
+    app: rabbitmq-ha
+    chart: "rabbitmq-ha-1.6.0"
+    release: "foolish-mole"
+    heritage: "Tiller"
+  name: foolish-mole-rabbitmq-ha
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get"]
+---
+# Source: rabbitmq-ha/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  labels:
+    app: rabbitmq-ha
+    chart: "rabbitmq-ha-1.6.0"
+    release: "foolish-mole"
+    heritage: "Tiller"
+  name: foolish-mole-rabbitmq-ha
+subjects:
+  - kind: ServiceAccount
+    name: foolish-mole-rabbitmq-ha
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: foolish-mole-rabbitmq-ha
+---
+# Source: rabbitmq-ha/templates/service-discovery.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: foolish-mole-rabbitmq-ha-discovery
+  labels:
+    app: rabbitmq-ha
+    chart: rabbitmq-ha-1.6.0
+    release: foolish-mole
+    heritage: Tiller
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      protocol: TCP
+      port: 15672
+      targetPort: http
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: amqp
+    - name: epmd
+      protocol: TCP
+      port: 4369
+      targetPort: epmd
+  selector:
+    app: rabbitmq-ha
+    release: foolish-mole
+  type: ClusterIP
+---
+# Source: rabbitmq-ha/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: foolish-mole-rabbitmq-ha
+  labels:
+    app: rabbitmq-ha
+    chart: rabbitmq-ha-1.6.0
+    release: foolish-mole
+    heritage: Tiller
+spec:
+  clusterIP: ""
+  ports:
+    - name: http
+      protocol: TCP
+      port: 15672
+      targetPort: http
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: amqp
+    - name: epmd
+      protocol: TCP
+      port: 4369
+      targetPort: epmd
+    
+  selector:
+    app: rabbitmq-ha
+    release: foolish-mole
+  type: ClusterIP
+---
+# Source: rabbitmq-ha/templates/statefulset.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: foolish-mole-rabbitmq-ha
+  labels:
+    app: rabbitmq-ha
+    chart: rabbitmq-ha-1.6.0
+    release: foolish-mole
+    heritage: Tiller
+spec:
+  serviceName: foolish-mole-rabbitmq-ha-discovery
+  replicas: 3
+  updateStrategy:
+    type: OnDelete
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-ha
+        release: foolish-mole
+      annotations:
+        checksum/config: 2c1793272ba256afe609713847441bac17e94638621fcebde67a0ed6b3b9fdcc
+    spec:
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: foolish-mole-rabbitmq-ha
+      initContainers:
+        - name: copy-rabbitmq-config
+          image: busybox
+          command: ['sh', '-c', 'cp /configmap/* /etc/rabbitmq; rm -f /var/lib/rabbitmq/.erlang.cookie']
+          volumeMounts:
+            - name: configmap
+              mountPath: /configmap
+            - name: config
+              mountPath: /etc/rabbitmq
+            - name: data
+              mountPath: /var/lib/rabbitmq
+      containers:
+        - name: rabbitmq-ha
+          image: rabbitmq:3.7-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: epmd
+              protocol: TCP
+              containerPort: 4369
+            - name: amqp
+              protocol: TCP
+              containerPort: 5672
+            - name: http
+              protocol: TCP
+              containerPort: 15672
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmqctl
+                - status
+            initialDelaySeconds: 120
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmqctl
+                - status
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 5
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+            - name: RABBITMQ_NODENAME
+              value: rabbit@$(MY_POD_NAME).foolish-mole-rabbitmq-ha-discovery.default.svc.cluster.local
+            - name: K8S_HOSTNAME_SUFFIX
+              value: .foolish-mole-rabbitmq-ha-discovery.default.svc.cluster.local
+            - name: K8S_SERVICE_NAME
+              value: foolish-mole-rabbitmq-ha-discovery
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: foolish-mole-rabbitmq-ha
+                  key: rabbitmq-erlang-cookie
+            - name: RABBITMQ_DEFAULT_USER
+              value: "guest"
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: foolish-mole-rabbitmq-ha
+                  key: rabbitmq-password
+            - name: RABBITMQ_DEFAULT_VHOST
+              value: "/"
+          resources:
+            {}
+            
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+            - name: config
+              mountPath: /etc/rabbitmq
+        
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: rabbitmq-ha
+                    release: foolish-mole
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: configmap
+          configMap:
+            name: foolish-mole-rabbitmq-ha
+        - name: data
+          emptyDir: {}

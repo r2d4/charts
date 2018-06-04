@@ -1,0 +1,84 @@
+# for i in $(find . -type f); do awk '/metadata:/{print a}{a=$0}' "$i"; done | sort | uniq -c | sort -bgr
+
+    313   template:
+    245 kind: Service
+    230 kind: Deployment
+    140 kind: Secret
+    129 kind: ConfigMap
+    119 apiVersion: v1
+     87 kind: ServiceAccount
+     80 kind: Ingress
+     54 kind: ClusterRoleBinding
+     54 kind: ClusterRole
+     38 kind: StatefulSet
+     28   volumeClaimTemplates:
+     26 kind: DaemonSet
+     22 kind: RoleBinding
+     22 kind: Pod
+     20 kind: PodDisruptionBudget
+     17 kind: Role
+     17 apiVersion: apiextensions.k8s.io/v1beta1
+     16 kind: Job
+     14 apiVersion: rbac.authorization.k8s.io/{{ required "A valid .Values.rbac.apiVersion entry required!" .Values.rbac.apiVersion }}
+     11 kind: CustomResourceDefinition
+      8 kind: PersistentVolumeClaim
+      8 apiVersion: rbac.authorization.k8s.io/v1beta1
+      7 apiVersion: rbac.authorization.k8s.io/v1
+      6 kind: metric
+      5 apiVersion: storage.k8s.io/v1
+      4 kind: ServiceMonitor
+      4 kind: PersistentVolume
+      4 apiVersion: rbac.authorization.k8s.io/{{ .Values.rbac.apiVersion }}
+      3 kind: ValidatingWebhookConfiguration
+      3 kind: rule
+      3 kind: NetworkPolicy
+      3 kind: APIService
+      3 apiVersion: extensions/v1beta1
+      2       template:
+      2 kind: StorageClass
+      2 kind: Secret
+      2 kind: ReplicationController
+      2 kind: PodSecurityPolicy
+      2     kind: PersistentVolume
+      2 kind: Namespace
+      2 kind: CronJob
+      2 kind: attributemanifest
+      2 apiVersion: {{ .Values.NetworkPolicy.ApiVersion }}
+      2 
+      1 ```yaml
+      1 type: Opaque
+      1 type: kubernetes.io/tls
+      1  template:
+      1     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+      1   {{- range $pv := .Values.persistentVolume }}
+      1   processors:
+      1     processors:
+      1 metadata:
+      1 kind: stdio
+      1   kind: Secret
+      1 kind: prometheus
+      1   kind: Pod
+      1 kind: MutatingWebhookConfiguration
+      1 kind: logentry
+      1 kind: InstanceGroup
+      1 kind: InitializerConfiguration
+      1   kind: Ingress
+      1 kind: HorizontalPodAutoscaler
+      1 kind: "EtcdRestore"
+      1 kind: "EtcdCluster"
+      1 kind: "EtcdBackup"
+      1 kind: Endpoints
+      1 kind: Cluster
+      1             "key": "PodConfiguration",
+      1 ## Define overrides for your Service resource here, e.g.
+      1 {{- define "mychart.web.service" -}}
+      1 {{- define "mychart.mail.service" -}}
+      1 {{ define "common.metadata" -}}
+      1 common.metadata creates a standard metadata header.
+      1     apiVersion: v1
+      1 apiVersion: {{ template "postgresql.networkPolicy.apiVersion" . }}
+      1 apiVersion: {{ template "networkPolicy.apiVersion" . }}
+      1 apiVersion: {{ template "minio.networkPolicy.apiVersion" . }}
+      1 apiVersion: {{ template "cockroachdb.networkPolicy.apiVersion" . }}
+      1       2 kind: attributemanifest
+      1 ---

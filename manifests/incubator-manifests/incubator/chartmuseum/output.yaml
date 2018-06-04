@@ -1,0 +1,210 @@
+[debug] Created tunnel using local port: '45519'
+
+[debug] SERVER: "127.0.0.1:45519"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/chartmuseum
+
+NAME:   tailored-echidna
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:57 2018
+CHART: chartmuseum-1.1.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+deployment:
+  annotations: {}
+env:
+  open:
+    ALLOW_OVERWRITE: false
+    AUTH_ANONYMOUS_GET: false
+    CHART_POST_FORM_FIELD_NAME: chart
+    CHART_URL: null
+    CONTEXT_PATH: null
+    DEBUG: false
+    DEPTH: 0
+    DISABLE_API: true
+    DISABLE_METRICS: true
+    INDEX_LIMIT: 0
+    LOG_JSON: true
+    PROV_POST_FORM_FIELD_NAME: prov
+    STORAGE: local
+    STORAGE_ALIBABA_BUCKET: null
+    STORAGE_ALIBABA_ENDPOINT: null
+    STORAGE_ALIBABA_PREFIX: null
+    STORAGE_ALIBABA_SSE: null
+    STORAGE_AMAZON_BUCKET: null
+    STORAGE_AMAZON_ENDPOINT: null
+    STORAGE_AMAZON_PREFIX: null
+    STORAGE_AMAZON_REGION: null
+    STORAGE_AMAZON_SSE: null
+    STORAGE_GOOGLE_BUCKET: null
+    STORAGE_GOOGLE_PREFIX: null
+    STORAGE_MICROSOFT_CONTAINER: null
+    STORAGE_MICROSOFT_PREFIX: null
+  secret:
+    BASIC_AUTH_PASS: null
+    BASIC_AUTH_USER: null
+image:
+  pullPolicy: IfNotPresent
+  repository: chartmuseum/chartmuseum
+  tag: v0.5.1
+ingress:
+  enabled: false
+nodeSelector: {}
+persistence:
+  accessMode: ReadWriteOnce
+  enabled: false
+  size: 8Gi
+probes:
+  liveness:
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readiness:
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+replica:
+  annotations: {}
+replicaCount: 1
+resources: {}
+service:
+  annotations: {}
+  externalPort: 8080
+  nodePort: null
+  type: ClusterIP
+strategy:
+  rollingUpdate:
+    maxUnavailable: 0
+  type: RollingUpdate
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: chartmuseum/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tailored-echidna-chartmuseum
+  labels:
+    app: chartmuseum
+    chart: chartmuseum-1.1.1
+    heritage: "Tiller"
+    release: "tailored-echidna"
+type: Opaque
+data:
+---
+# Source: chartmuseum/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: tailored-echidna-chartmuseum
+  annotations:
+    {}
+    
+  labels:
+    app: chartmuseum
+    chart: chartmuseum-1.1.1
+    heritage: "Tiller"
+    release: "tailored-echidna"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: chartmuseum
+    release: "tailored-echidna"
+---
+# Source: chartmuseum/templates/deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tailored-echidna-chartmuseum
+  annotations:
+    {}
+    
+  labels:
+    app: chartmuseum
+    chart: chartmuseum-1.1.1
+    heritage: "Tiller"
+    release: "tailored-echidna"
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+    type: RollingUpdate
+    
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      name: tailored-echidna-chartmuseum
+      annotations:
+        {}
+        
+      labels:
+        app: chartmuseum
+        release: "tailored-echidna"
+    spec:
+      containers:
+      - name: chartmuseum
+        image: chartmuseum/chartmuseum:v0.5.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: "CHART_POST_FORM_FIELD_NAME"
+          value: "chart"
+        - name: "DISABLE_API"
+          value: "true"
+        - name: "DISABLE_METRICS"
+          value: "true"
+        - name: "LOG_JSON"
+          value: "true"
+        - name: "PROV_POST_FORM_FIELD_NAME"
+          value: "prov"
+        - name: "STORAGE"
+          value: "local"
+        args:
+        - --port=8080
+        - --storage-local-rootdir=/storage
+        ports:
+        - name: http
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+          
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+          
+        volumeMounts:
+        - mountPath: /storage
+          name: storage-volume
+
+      volumes:
+      - name: storage-volume
+        emptyDir: {}

@@ -1,0 +1,344 @@
+[debug] Created tunnel using local port: '37161'
+
+[debug] SERVER: "127.0.0.1:37161"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/pachyderm
+
+NAME:   killjoy-giraffe
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:29 2018
+CHART: pachyderm-0.1.6
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+amazon:
+  bucketName: ""
+  distribution: ""
+  id: ""
+  region: ""
+  secret: ""
+  token: ""
+credentials: local
+etcd:
+  image:
+    pullPolicy: IfNotPresent
+    repository: pachyderm/etcd
+    tag: v3.2.7
+  persistence:
+    accessMode: ReadWriteOnce
+    enabled: false
+    size: 20G
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256M
+google:
+  bucketName: ""
+microsoft:
+  container: ""
+  id: ""
+  secret: ""
+pachd:
+  image:
+    pullPolicy: Always
+    repository: pachyderm/pachd
+    tag: 1.7.0
+  pfsCache: 0G
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512M
+  worker:
+    repository: pachyderm/worker
+    tag: 1.7.0
+rbac:
+  create: true
+s3:
+  accessKey: ""
+  bucketName: ""
+  endpoint: ""
+  secretKey: ""
+  secure: "0"
+  signature: "1"
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: pachyderm/templates/pachd_secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pachyderm-storage-secret
+  labels:
+    app: killjoy-giraffe-pachyderm
+    chart: "pachyderm-0.1.6"
+    release: "killjoy-giraffe"
+    heritage: "Tiller"
+    suite: pachyderm
+data:
+---
+# Source: pachyderm/templates/pachd_sa.yaml
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: pachyderm
+  labels:
+    app: killjoy-giraffe-pachyderm
+    chart: "pachyderm-0.1.6"
+    release: "killjoy-giraffe"
+    heritage: "Tiller"
+    suite: pachyderm
+---
+# Source: pachyderm/templates/pachd_role.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: pachyderm
+  creationTimestamp: 
+  labels:
+    app: ''
+    suite: pachyderm
+rules:
+- verbs:
+  - get
+  - list
+  - watch
+  apiGroups:
+  - ''
+  resources:
+  - nodes
+  - pods
+  - pods/log
+  - endpoints
+- verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  apiGroups:
+  - ''
+  resources:
+  - replicationcontrollers
+  - services
+- verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  apiGroups:
+  - ''
+  resources:
+  - secrets
+  resourceNames:
+  - pachyderm-storage-secret
+---
+# Source: pachyderm/templates/pachd_rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: pachyderm
+roleRef:
+  apiGroup: ''
+  kind: Role
+  name: pachyderm
+subjects:
+  - kind: ServiceAccount
+    name: pachyderm
+    namespace: default
+---
+# Source: pachyderm/templates/etcd_svc.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd
+  labels:
+    app: killjoy-giraffe-etcd
+    chart: "pachyderm-0.1.6"
+    release: "killjoy-giraffe"
+    heritage: "Tiller"
+    suite: pachyderm
+spec:
+  ports:
+    - name: client-port
+      port: 2379
+      targetPort: 0
+  selector:
+    app: killjoy-giraffe-etcd
+  type: NodePort
+---
+# Source: pachyderm/templates/pachd_svc.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: pachd
+  labels:
+    app: pachd
+    chart: "pachyderm-0.1.6"
+    release: "killjoy-giraffe"
+    heritage: "Tiller"
+    suite: pachyderm
+spec:
+  ports:
+    - name: api-grpc-port
+      port: 650
+      targetPort: 650
+      nodePort: 30650
+    - name: trace-port
+      port: 651
+      targetPort: 651
+      nodePort: 30651
+    - name: api-http-port
+      port: 652
+      targetPort: 652
+      nodePort: 30652
+  selector:
+    app: pachd
+  type: NodePort
+---
+# Source: pachyderm/templates/etcd_deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: etcd
+  labels:
+    app: killjoy-giraffe-etcd
+    chart: "pachyderm-0.1.6"
+    release: "killjoy-giraffe"
+    heritage: "Tiller"
+    suite: pachyderm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: killjoy-giraffe-etcd
+      suite: pachyderm
+  template:
+    metadata:
+      name: etcd
+      labels:
+        app: killjoy-giraffe-etcd
+        suite: pachyderm
+    spec:
+      volumes:
+        - name: etcdvol
+          hostPath:
+           path: "/var/pachyderm/etcd"
+      containers:
+        - name: etcd
+          image: 'pachyderm/etcd:v3.2.7'
+          command:
+          - "/usr/local/bin/etcd"
+          - "--listen-client-urls=http://0.0.0.0:2379"
+          - "--advertise-client-urls=http://0.0.0.0:2379"
+          - "--data-dir=/var/data/etcd"
+          - "--auto-compaction-retention=1"
+          ports:
+            - name: client-port
+              containerPort: 2379
+            - name: peer-port
+              containerPort: 2380
+          resources:
+           requests:
+            cpu: '250m'
+            memory: 256M
+          volumeMounts:
+            - name: etcdvol
+              mountPath: "/var/data/etcd"
+          imagePullPolicy: IfNotPresent
+---
+# Source: pachyderm/templates/pachd_deployment.yaml
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: pachd
+  labels:
+    app: pachd
+    chart: "pachyderm-0.1.6"
+    release: "killjoy-giraffe"
+    heritage: "Tiller"
+    suite: pachyderm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pachd
+      suite: pachyderm
+  template:
+    metadata:
+      name: pachd
+      labels:
+        app: pachd
+        suite: pachyderm
+    spec:
+      volumes:
+      - name: pachdvol
+        hostPath:
+         path: "/var/pachyderm/pachd"
+      - name: pachyderm-storage-secret
+        secret:
+          secretName: pachyderm-storage-secret
+      containers:
+      - name: pachd
+        image: 'pachyderm/pachd:1.7.0'
+        ports:
+        - name: api-grpc-port
+          containerPort: 650
+          protocol: TCP
+        - name: trace-port
+          containerPort: 651
+        - name: api-http-port
+          containerPort: 652
+        env:
+        - name: PACH_ROOT
+          value: "/pach"
+        - name: NUM_SHARDS
+          value: '16'
+        - name: STORAGE_BACKEND
+          value: LOCAL
+        - name: STORAGE_HOST_PATH
+          value: "/var/pachyderm/pachd"
+        - name: PACHD_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: WORKER_IMAGE
+          value: 'pachyderm/worker:1.7.0'
+        - name: WORKER_SIDECAR_IMAGE
+          value: 'pachyderm/pachd:1.7.0'
+        - name: WORKER_IMAGE_PULL_POLICY
+          value: IfNotPresent
+        - name: PACHD_VERSION
+          value: 1.7.0
+        - name: METRICS
+          value: 'true'
+        - name: LOG_LEVEL
+          value: info
+        - name: BLOCK_CACHE_BYTES
+          value: '0G'
+        - name: IAM_ROLE
+        - name: PACHYDERM_AUTHENTICATION_DISABLED_FOR_TESTING
+          value: 'false'
+        resources:
+          requests:
+            cpu: '250m'
+            memory: 512M
+        volumeMounts:
+        - name: pachdvol
+          mountPath: "/pach"
+        - name: pachyderm-storage-secret
+          mountPath: "/pachyderm-storage-secret"
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+      serviceAccountName: pachyderm
+  strategy: {}
+status: {}

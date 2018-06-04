@@ -1,0 +1,40 @@
+
+---
+# Source: vaultingkube/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pugnacious-gecko-vaultingkube
+---
+# Source: vaultingkube/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pugnacious-gecko-vaultingkube
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+---
+# Source: vaultingkube/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pugnacious-gecko-vaultingkube
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pugnacious-gecko-vaultingkube
+subjects:
+- kind: ServiceAccount
+  name: pugnacious-gecko-vaultingkube
+  namespace: default

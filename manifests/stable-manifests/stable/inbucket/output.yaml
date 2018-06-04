@@ -1,0 +1,120 @@
+[debug] Created tunnel using local port: '44887'
+
+[debug] SERVER: "127.0.0.1:44887"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/inbucket
+
+NAME:   clunky-cat
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:20 2018
+CHART: inbucket-1.0.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: jhillyerd/inbucket
+  tag: release-1.2.0
+ingress:
+  annotations: {}
+  enabled: false
+  hosts:
+  - inbucket.example.com
+  path: /
+  tls: []
+podAnnotations: {}
+resources: {}
+service:
+  annotations: {}
+  clusterIP: ""
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  nodePort:
+    http: ""
+    pop: ""
+    smtp: ""
+  port:
+    http: 10080
+    pop: 10110
+    smtp: 10025
+  type: ClusterIP
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: inbucket/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: inbucket
+    chart: inbucket-1.0.0
+    heritage: Tiller
+    release: clunky-cat
+  name: clunky-cat-inbucket
+spec:
+  type: "ClusterIP"
+  clusterIP: ""
+  ports:
+    - name: http
+      port: 10080
+      protocol: TCP
+      targetPort: http
+    - name: smtp
+      port: 10025
+      protocol: TCP
+      targetPort: smtp
+  selector:
+    app: inbucket
+    release: clunky-cat
+---
+# Source: inbucket/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:
+    app: inbucket
+    chart: inbucket-1.0.0
+    heritage: Tiller
+    release: clunky-cat
+  name: clunky-cat-inbucket
+spec:
+  selector:
+    matchLabels:
+      app: inbucket
+      release: "clunky-cat"
+  template:
+    metadata:
+      labels:
+        app: inbucket
+        release: "clunky-cat"
+    spec:
+      containers:
+        - name: inbucket
+          image: "jhillyerd/inbucket:release-1.2.0"
+          imagePullPolicy: "IfNotPresent"
+          env:
+          ports:
+            - name: http
+              containerPort: 10080
+              protocol: TCP
+            - name: smtp
+              containerPort: 10025
+              protocol: TCP
+            - name: pop3
+              containerPort: 10110
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+          resources:
+            {}

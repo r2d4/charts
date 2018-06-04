@@ -1,0 +1,125 @@
+[debug] Created tunnel using local port: '40141'
+
+[debug] SERVER: "127.0.0.1:40141"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/stackdriver-exporter
+
+NAME:   juiced-pig
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:35 2018
+CHART: stackdriver-exporter-0.0.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+annotations: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: frodenas/stackdriver-exporter
+  tag: v0.5.1
+replicaCount: 1
+resources: {}
+restartPolicy: Always
+service:
+  annotations: {}
+  httpPort: 9255
+  type: ClusterIP
+stackdriver:
+  metrics:
+    interval: 5m
+    offset: 0s
+    typePrefixes: compute.googleapis.com/instance/cpu
+  projectId: "FALSE"
+web:
+  listenAddress: :9255
+  path: /metrics
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: stackdriver-exporter/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: juiced-pig-stackdriver-exporter
+  labels:
+    chart: stackdriver-exporter-0.0.4
+    app: stackdriver-exporter
+    release: "juiced-pig"
+    heritage: "Tiller"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9255
+      protocol: TCP
+  selector:
+    app: stackdriver-exporter
+    release: "juiced-pig"
+---
+# Source: stackdriver-exporter/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: juiced-pig-stackdriver-exporter
+  labels:
+    chart: stackdriver-exporter-0.0.4
+    app: stackdriver-exporter
+    release: "juiced-pig"
+    heritage: "Tiller"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stackdriver-exporter
+      release: "juiced-pig"
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: stackdriver-exporter
+        release: "juiced-pig"
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: stackdriver-exporter
+          image: "frodenas/stackdriver-exporter:v0.5.1"
+          imagePullPolicy: IfNotPresent
+          command: ["stackdriver_exporter"]
+          env:
+            - name: STACKDRIVER_EXPORTER_GOOGLE_PROJECT_ID
+              value: "FALSE"
+            - name: STACKDRIVER_EXPORTER_MONITORING_METRICS_TYPE_PREFIXES
+              value: "compute.googleapis.com/instance/cpu"
+            - name: STACKDRIVER_EXPORTER_MONITORING_METRICS_INTERVAL
+              value: "5m"
+            - name: STACKDRIVER_EXPORTER_MONITORING_METRICS_OFFSET
+              value: "0s"
+            - name: STACKDRIVER_EXPORTER_WEB_LISTEN_ADDRESS
+              value: ":9255"
+            - name: STACKDRIVER_EXPORTER_WEB_TELEMETRY_PATH
+              value: "/metrics"
+          resources:
+            {}
+            
+          ports:
+            - containerPort: 9255
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            timeoutSeconds: 10

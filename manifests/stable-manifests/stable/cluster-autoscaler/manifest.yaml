@@ -1,0 +1,41 @@
+
+---
+# Source: cluster-autoscaler/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: aws-cluster-autoscaler
+    chart: cluster-autoscaler-0.6.4
+    heritage: Tiller
+    release: nuanced-unicorn
+  name: nuanced-unicorn-aws-cluster-autoscaler
+spec:
+  clusterIP: ""
+  ports:
+    - port: 8085
+      protocol: TCP
+      targetPort: 8085
+      name: http
+  selector:
+    app: aws-cluster-autoscaler
+    release: nuanced-unicorn
+  type: "ClusterIP"
+---
+# Source: cluster-autoscaler/templates/pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: aws-cluster-autoscaler
+    chart: cluster-autoscaler-0.6.4
+    heritage: Tiller
+    release: nuanced-unicorn
+  name: nuanced-unicorn-aws-cluster-autoscaler
+spec:
+  selector:
+    matchLabels:
+      app: aws-cluster-autoscaler
+      release: nuanced-unicorn
+  maxUnavailable: 1
+  # minAvailable: 2

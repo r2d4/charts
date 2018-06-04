@@ -1,0 +1,30 @@
+
+---
+# Source: kube-registry-proxy/templates/daemon.yaml
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: cautious-squid-kube-registry-proxy
+  labels:
+    heritage: "Tiller"
+    release: "cautious-squid"
+    chart: "kube-registry-proxy-0.2.2"
+spec:
+  template:
+    metadata:
+      name: cautious-squid-kube-registry-proxy
+      labels:
+        app: cautious-squid-kube-registry-proxy
+    spec:
+      containers:
+      - name: kube-registry-proxy
+        image: "k8s.gcr.io/kube-registry-proxy:0.4"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: REGISTRY_HOST
+          value: "gcr.io"
+        - name: REGISTRY_PORT
+          value: ""
+        ports:
+        - containerPort: 80
+          hostPort: 5555

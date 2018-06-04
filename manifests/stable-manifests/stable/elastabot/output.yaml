@@ -1,0 +1,91 @@
+[debug] Created tunnel using local port: '46805'
+
+[debug] SERVER: "127.0.0.1:46805"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/elastabot
+
+NAME:   honest-lamb
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:16 2018
+CHART: elastabot-1.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+commandPrefix: '!'
+elastalert:
+  defaultSilenceMinutes: 240
+  recentAlertMinutes: 4320
+elasticsearch:
+  host: ""
+  port: 9200
+  sslEnabled: false
+  sslStrictEnabled: false
+  timeoutSeconds: 10
+image:
+  pullPolicy: IfNotPresent
+  repository: jertel/elastabot
+  tag: 1.1.0
+nodeSelector: {}
+resources: {}
+searchEnabled: true
+smtp:
+  debug: false
+  from: ""
+  host: ""
+  port: 25
+  secure: false
+  starttls: false
+  subjectPrefix: ""
+  timeoutSeconds: 4
+  to: ""
+tolerations: []
+triageTarget: smtp
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: elastabot/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: honest-lamb-elastabot-config
+  labels:
+    app: elastabot
+    chart: elastabot-1.1.0
+    heritage: Tiller
+    release: honest-lamb
+data:
+  elastabot.json: |-
+    {
+      "elasticsearch": {
+        "host": "",
+        "port": 9200,
+        "sslEnabled": false,
+        "sslStrictEnabled": false,
+        "timeoutSeconds": 10,
+        "urlPrefix":""
+      },
+      "elastalert": {
+        "index": "elastalert_status",
+        "silenceMinutes": 240,
+        "recentMinutes": 4320
+      },
+      "smtp": {
+        "host": "",
+        "port": 25,
+        "secure": false,
+        "starttls": false,
+        "timeoutSeconds": 4,
+        "to": "",
+        "from": "",
+        "subjectPrefix": "",
+        "debug": false
+      },
+      "commandPrefix": "!",
+      "triageTarget": "smtp",
+      "searchEnabled": "true"
+    }

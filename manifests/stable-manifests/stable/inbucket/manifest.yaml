@@ -1,0 +1,74 @@
+
+---
+# Source: inbucket/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: inbucket
+    chart: inbucket-1.0.0
+    heritage: Tiller
+    release: clunky-cat
+  name: clunky-cat-inbucket
+spec:
+  type: "ClusterIP"
+  clusterIP: ""
+  ports:
+    - name: http
+      port: 10080
+      protocol: TCP
+      targetPort: http
+    - name: smtp
+      port: 10025
+      protocol: TCP
+      targetPort: smtp
+  selector:
+    app: inbucket
+    release: clunky-cat
+---
+# Source: inbucket/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:
+    app: inbucket
+    chart: inbucket-1.0.0
+    heritage: Tiller
+    release: clunky-cat
+  name: clunky-cat-inbucket
+spec:
+  selector:
+    matchLabels:
+      app: inbucket
+      release: "clunky-cat"
+  template:
+    metadata:
+      labels:
+        app: inbucket
+        release: "clunky-cat"
+    spec:
+      containers:
+        - name: inbucket
+          image: "jhillyerd/inbucket:release-1.2.0"
+          imagePullPolicy: "IfNotPresent"
+          env:
+          ports:
+            - name: http
+              containerPort: 10080
+              protocol: TCP
+            - name: smtp
+              containerPort: 10025
+              protocol: TCP
+            - name: pop3
+              containerPort: 10110
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+          resources:
+            {}

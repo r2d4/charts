@@ -1,0 +1,127 @@
+
+---
+# Source: kubewatch/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: kubewatch
+    chart: kubewatch-0.3.1
+    heritage: "Tiller"
+    release: "ironic-zebu"
+  name: ironic-zebu-kubewatch-config
+data:
+  .kubewatch.yaml: |
+    handler:
+      slack:
+        channel: XXXX
+        token: XXXX
+        
+    resource:
+      daemonset: false
+      deployment: true
+      job: false
+      persistentvolume: false
+      pod: true
+      replicaset: false
+      replicationcontroller: false
+      services: false
+---
+# Source: kubewatch/templates/servieaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: kubewatch
+    chart: kubewatch-0.3.1
+    heritage: Tiller
+    release: ironic-zebu
+  name: ironic-zebu-kubewatch
+---
+# Source: kubewatch/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  labels:
+    app: kubewatch
+    chart: kubewatch-0.3.1
+    heritage: Tiller
+    release: ironic-zebu
+  name: ironic-zebu-kubewatch
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - namespaces
+      - services
+      - deployments
+      - replicationcontrollers
+      - replicasets
+      - daemonsets
+    verbs:
+      - list
+      - watch
+---
+# Source: kubewatch/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: kubewatch
+    chart: kubewatch-0.3.1
+    heritage: Tiller
+    release: ironic-zebu
+  name: ironic-zebu-kubewatch
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironic-zebu-kubewatch
+subjects:
+  - kind: ServiceAccount
+    name: ironic-zebu-kubewatch
+    namespace: default
+---
+# Source: kubewatch/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  labels:
+    app: kubewatch
+    chart: kubewatch-0.3.1
+    heritage: "Tiller"
+    release: "ironic-zebu"
+  name: ironic-zebu-kubewatch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubewatch
+      release: ironic-zebu
+  template:
+    metadata:
+      annotations:
+        checksum/config-map: 2ecfa0fa2cda918e5cfe60a5db44fd65c0e66c1a6126419c5d68cfa3b122093e
+      labels:
+        app: kubewatch
+        release: "ironic-zebu"
+    spec:
+      containers:
+      - name: kubewatch
+        image: tuna/kubewatch:v0.0.3
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: kubewatch-config-map
+          mountPath: /root
+        resources:
+          {}
+          
+      serviceAccountName: ironic-zebu-kubewatch
+      tolerations:
+        []
+        
+      restartPolicy: Always
+      volumes:
+      - name: kubewatch-config-map
+        configMap:
+          name: ironic-zebu-kubewatch-config

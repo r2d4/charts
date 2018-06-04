@@ -1,0 +1,72 @@
+[debug] Created tunnel using local port: '41475'
+
+[debug] SERVER: "127.0.0.1:41475"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/gcloud-sqlproxy
+
+NAME:   pilfering-alpaca
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:19 2018
+CHART: gcloud-sqlproxy-0.3.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+cloudsql:
+  instances:
+  - instance: instance
+    instanceShortName: ""
+    port: 5432
+    project: project
+    region: region
+image: b.gcr.io/cloudsql-docker/gce-proxy
+imagePullPolicy: IfNotPresent
+imageTag: "1.11"
+nodeSelector: {}
+replicasCount: 1
+resources:
+  limits:
+    cpu: 150m
+    memory: 150Mi
+  requests:
+    cpu: 100m
+    memory: 100Mi
+serviceAccountKey: ""
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: gcloud-sqlproxy/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pilfering-alpaca-gcloud-sqlproxy
+  labels:
+    app: pilfering-alpaca-gcloud-sqlproxy
+    chart: "gcloud-sqlproxy-0.3.4"
+    release: "pilfering-alpaca"
+    heritage: "Tiller"
+type: Opaque
+data:
+  credentials.json: |-
+---
+# Source: gcloud-sqlproxy/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: pilfering-alpaca-gcloud-sqlproxy
+  labels:
+    app: pilfering-alpaca-gcloud-sqlproxy
+    chart: "gcloud-sqlproxy-0.3.4"
+    release: "pilfering-alpaca"
+    heritage: "Tiller"
+spec:
+  ports:
+  - name: instance
+    protocol: TCP
+    port: 5432
+    targetPort: instance
+  selector:
+    app: pilfering-alpaca-gcloud-sqlproxy

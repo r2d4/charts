@@ -1,0 +1,141 @@
+[debug] Created tunnel using local port: '36809'
+
+[debug] SERVER: "127.0.0.1:36809"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/incubator/elasticsearch-curator
+
+NAME:   alternating-swan
+REVISION: 1
+RELEASED: Sat Jun  2 14:58:58 2018
+CHART: elasticsearch-curator-0.2.1
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+config:
+  elasticsearch:
+    hosts:
+    - CHANGEME.host
+    port: 9200
+configMaps:
+  action_file_yml: |-
+    ---
+    actions:
+      1:
+        action: delete_indices
+        description: "Clean up ES by deleting old indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+        - filtertype: age
+          source: name
+          direction: older
+          timestring: '%Y.%m.%d'
+          unit: days
+          unit_count: 7
+          field:
+          stats_result:
+          epoch:
+          exclude: False
+cronjob:
+  annotations: {}
+  schedule: 0 1 * * *
+image:
+  pullPolicy: IfNotPresent
+  repository: quay.io/pires/docker-elasticsearch-curator
+  tag: 5.4.1
+pod:
+  annotations: {}
+resources: {}
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: elasticsearch-curator/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: curator-config
+  labels:
+    app: elasticsearch-curator
+    chart: elasticsearch-curator-0.2.1
+    release: alternating-swan
+    heritage: Tiller
+data:
+  action_file.yml:   |-
+    ---
+    actions:
+      1:
+        action: delete_indices
+        description: "Clean up ES by deleting old indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+        - filtertype: age
+          source: name
+          direction: older
+          timestring: '%Y.%m.%d'
+          unit: days
+          unit_count: 7
+          field:
+          stats_result:
+          epoch:
+          exclude: False
+  
+  
+  config.yml: |
+    client:
+      hosts: 
+        -  CHANGEME.host 
+      port: 9200
+---
+# Source: elasticsearch-curator/templates/cronjob.yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: alternating-swan-elasticsearch-curator
+  labels:
+    app: elasticsearch-curator
+    chart: elasticsearch-curator-0.2.1
+    release: alternating-swan
+    heritage: Tiller
+  annotations: 
+    {}
+    
+spec:
+  schedule: "0 1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: elasticsearch-curator
+            release: alternating-swan
+          annotations: 
+            {}
+            
+        spec:
+          volumes:
+            - name: config-volume
+              configMap:
+                name: curator-config
+          restartPolicy: Never
+          containers:
+            - name: elasticsearch-curator
+              image: "quay.io/pires/docker-elasticsearch-curator:5.4.1"
+              imagePullPolicy: IfNotPresent
+              volumeMounts:
+                - name: config-volume
+                  mountPath: /etc/es-curator
+              command: [ "curator" ]
+              args: [ "--config", "/etc/es-curator/config.yml", "/etc/es-curator/action_file.yml" ]
+              resources:
+                {}

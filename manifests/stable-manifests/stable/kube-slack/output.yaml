@@ -1,0 +1,119 @@
+[debug] Created tunnel using local port: '37641'
+
+[debug] SERVER: "127.0.0.1:37641"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/kube-slack
+
+NAME:   sad-warthog
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:23 2018
+CHART: kube-slack-0.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+image:
+  pullPolicy: IfNotPresent
+  repository: willwill/kube-slack
+  tag: v3.1.1
+nodeSelector: {}
+notReadyMinTime: 60000
+rbac:
+  create: true
+resources: {}
+serviceAccount:
+  create: true
+  name: null
+slackUrl: ""
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: kube-slack/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+---
+# Source: kube-slack/templates/clusterrole.yaml
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: ClusterRole
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+---
+# Source: kube-slack/templates/clusterrolebinding.yaml
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: ClusterRoleBinding
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sad-warthog-kube-slack
+subjects:
+  - kind: ServiceAccount
+    name: sad-warthog-kube-slack
+    namespace: default
+---
+# Source: kube-slack/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+spec:
+  replicas: 
+  selector:
+    matchLabels:
+      app: kube-slack
+      release: sad-warthog
+  template:
+    metadata:
+      labels:
+        app: kube-slack
+        release: sad-warthog
+    spec:
+      containers:
+        - name: kube-slack
+          image: "willwill/kube-slack:v3.1.1"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SLACK_URL
+              value: 
+            - name: NOT_READY_MIN_TIME
+              value: "60000"
+          resources:
+            {}
+            
+      serviceAccountName: sad-warthog-kube-slack

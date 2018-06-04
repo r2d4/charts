@@ -1,0 +1,116 @@
+[debug] Created tunnel using local port: '36279'
+
+[debug] SERVER: "127.0.0.1:36279"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/prometheus-mysql-exporter
+
+NAME:   honking-tuatara
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:30 2018
+CHART: prometheus-mysql-exporter-0.1.0
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+affinity: {}
+annotations: {}
+cloudsqlproxy:
+  credentials: '{ "type": "service_account", "project_id": "project", "private_key_id":
+    "KEYID1", "private_key": "-----BEGIN PRIVATE KEY-----\sdajsdnasd\n-----END PRIVATE
+    KEY-----\n", "client_email": "user@project.iam.gserviceaccount.com", "client_id":
+    "111111111", "auth_uri": "https://accounts.google.com/o/oauth2/auth", "token_uri":
+    "https://accounts.google.com/o/oauth2/token", "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/user%40project.iam.gserviceaccount.com"
+    }'
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repo: gcr.io/cloudsql-docker/gce-proxy
+    tag: "1.11"
+  instanceConnectionName: project:us-central1:dbname
+  port: "3306"
+datasource: username:password@(localhost:3306)/
+image:
+  pullPolicy: IfNotPresent
+  repository: prom/mysqld-exporter
+  tag: v0.10.0
+nodeSelector: {}
+replicaCount: 1
+resources: {}
+service:
+  externalPort: 9104
+  internalPort: 9104
+  name: mysql-exporter
+  type: ClusterIP
+tolerations: []
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: prometheus-mysql-exporter/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: honking-tuatara-prometheus-mysql-exporter
+  labels:
+    app: prometheus-mysql-exporter
+    chart: prometheus-mysql-exporter-0.1.0
+    release: honking-tuatara
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9104
+      targetPort: 9104
+      protocol: TCP
+      name: mysql-exporter
+  selector:
+    app: prometheus-mysql-exporter
+    release: honking-tuatara
+---
+# Source: prometheus-mysql-exporter/templates/deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: honking-tuatara-prometheus-mysql-exporter
+  labels:
+    app: prometheus-mysql-exporter
+    chart: prometheus-mysql-exporter-0.1.0
+    release: honking-tuatara
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-mysql-exporter
+      release: honking-tuatara
+  template:
+    metadata:
+      labels:
+        app: prometheus-mysql-exporter
+        release: honking-tuatara
+      annotations:
+        {}
+        
+    spec:
+      containers:
+        - name: prometheus-mysql-exporter
+          image: "prom/mysqld-exporter:v0.10.0"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATA_SOURCE_NAME
+              value: username:password@(localhost:3306)/
+          ports:
+            - containerPort: 9104
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9104
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9104
+          resources:
+            {}

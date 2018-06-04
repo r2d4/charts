@@ -1,0 +1,199 @@
+
+---
+# Source: dask/templates/dask-jupyter-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anxious-bobcat-dask-jupyter-config
+  labels:
+    app: dask
+    heritage: "Tiller"
+    release: "anxious-bobcat"
+    chart: dask-1.0.4
+    component: jupyter
+data:
+  jupyter_notebook_config.py: |
+    c = get_config()
+    c.NotebookApp.password = 'sha1:aae8550c0a44:9507d45e087d5ee481a5ce9f4f16f37a0867318c'
+---
+# Source: dask/templates/dask-jupyter-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: anxious-bobcat-dask-jupyter
+  labels:
+    app: dask
+    heritage: "Tiller"
+    release: "anxious-bobcat"
+    chart: dask-1.0.4
+    component: jupyter
+spec:
+  ports:
+    - port: 80
+      targetPort: 8888
+  selector:
+    app: dask
+    release: "anxious-bobcat"
+    component: jupyter
+  type: LoadBalancer
+---
+# Source: dask/templates/dask-scheduler-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: anxious-bobcat-dask-scheduler
+  labels:
+    app: dask
+    heritage: "Tiller"
+    release: "anxious-bobcat"
+    chart: dask-1.0.4
+    component: scheduler
+spec:
+  ports:
+    - name: anxious-bobcat-dask-scheduler
+      port: 8786
+      targetPort: 8786
+    - name: anxious-bobcat-dask-webui
+      port: 80
+      targetPort: 8787
+  selector:
+    app: dask
+    release: "anxious-bobcat"
+    component: scheduler
+  type: LoadBalancer
+---
+# Source: dask/templates/dask-jupyter-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: anxious-bobcat-dask-jupyter
+  labels:
+    app: dask
+    heritage: "Tiller"
+    release: "anxious-bobcat"
+    chart: dask-1.0.4
+    component: jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dask
+      release: "anxious-bobcat"
+      component: jupyter
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dask
+        release: "anxious-bobcat"
+        component: jupyter
+    spec:
+      containers:
+        - name: anxious-bobcat-dask-jupyter
+          image: "daskdev/dask-notebook:0.17.4"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8888
+          resources:
+            {}
+            
+          volumeMounts:
+            - name: config-volume
+              mountPath: /home/jovyan/.jupyter
+          env:
+            - name: DASK_SCHEDULER_ADDRESS
+              value: anxious-bobcat-dask-scheduler:8786
+      volumes:
+        - name: config-volume
+          configMap:
+            name: anxious-bobcat-dask-jupyter-config
+---
+# Source: dask/templates/dask-scheduler-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: anxious-bobcat-dask-scheduler
+  labels:
+    app: dask
+    heritage: "Tiller"
+    release: "anxious-bobcat"
+    chart: dask-1.0.4
+    component: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dask
+      release: "anxious-bobcat"
+      component: scheduler
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dask
+        release: "anxious-bobcat"
+        component: scheduler
+    spec:
+      containers:
+        - name: anxious-bobcat-dask-scheduler
+          image: "daskdev/dask:0.17.4"
+          imagePullPolicy: IfNotPresent
+          args:
+            - dask-scheduler
+            - --port
+            - "8786"
+            - --bokeh-port
+            - "8787"
+          ports:
+            - containerPort: 8786
+            - containerPort: 8787
+          resources:
+            {}
+            
+          env:
+            null
+---
+# Source: dask/templates/dask-worker-deployment.yaml
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: anxious-bobcat-dask-worker
+  labels:
+    app: dask
+    heritage: "Tiller"
+    release: "anxious-bobcat"
+    chart: dask-1.0.4
+    component: worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dask
+      release: "anxious-bobcat"
+      component: worker
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dask
+        release: "anxious-bobcat"
+        component: worker
+    spec:
+      containers:
+        - name: anxious-bobcat-dask-worker
+          image: "daskdev/dask:0.17.4"
+          imagePullPolicy: IfNotPresent
+          args:
+            - dask-worker
+            - anxious-bobcat-dask-scheduler:8786
+            - --no-bokeh
+          ports:
+            - containerPort: 8789
+          resources:
+            {}
+            
+          env:
+            null

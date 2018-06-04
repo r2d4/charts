@@ -1,0 +1,109 @@
+
+---
+# Source: goldfish/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "kissing-robin-goldfish"
+  labels:
+    app: "goldfish"
+    release: "kissing-robin"
+    heritage: "Tiller"
+    chart: "goldfish-0.2.5"
+type: Opaque
+data:
+  vault-addr: "aHR0cDovL3ZhdWx0OjgyMDA="
+  vault-token: "dG9rZW4="
+---
+# Source: goldfish/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "kissing-robin-goldfish"
+  labels:
+    app: "goldfish"
+    release: "kissing-robin"
+    heritage: "Tiller"
+    chart: "goldfish-0.2.5"
+data:
+  docker.json: |
+    {"disable_mlock":1,"listener":{"tcp":{"address":"0.0.0.0:8000","tls_cert_file":"","tls_disable":1,"tls_key_file":""}},"vault":{"address":"http://vault:8200","approle_id":"goldfish","approle_login":"auth/approle/login","runtime_config":"secret/goldfish","tls_skip_verify":1}}
+---
+# Source: goldfish/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "kissing-robin-goldfish"
+  labels:
+    app: "goldfish"
+    release: "kissing-robin"
+    heritage: "Tiller"
+    chart: "goldfish-0.2.5"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: nginx
+  selector:
+    app: goldfish
+    release: kissing-robin
+---
+# Source: goldfish/templates/deployment.yaml
+#TODO custom hcl, vault token in cmd
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "kissing-robin-goldfish"
+  labels:
+    app: "goldfish"
+    release: "kissing-robin"
+    heritage: "Tiller"
+    chart: "goldfish-0.2.5"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: goldfish
+        release: kissing-robin
+    spec:
+      containers:
+        - name: goldfish
+          image: "quay.io/tuannvm/goldfish:v0.7.3"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+          - name: VAULT_ADDR
+            valueFrom:
+              secretKeyRef:
+                name: kissing-robin-goldfish
+                key: vault-addr
+          - name: VAULT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: kissing-robin-goldfish
+                key: vault-token
+          command:
+          - /app/entrypoint.sh
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+          volumeMounts:
+          - name: goldfish-config
+            mountPath: /app/docker.json
+            subPath: docker.json
+          resources:
+            {}
+            
+      volumes:
+        - name: goldfish-config
+          configMap:
+            name: "kissing-robin-goldfish"

@@ -1,0 +1,26 @@
+
+---
+# Source: buildkite/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ponderous-bison-buildkite
+  labels:
+    app: buildkite
+    chart: buildkite-0.2.3
+    release: ponderous-bison
+    heritage: Tiller
+type: Opaque
+data:
+  agent-token:
+---
+# Source: buildkite/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ponderous-bison-buildkite
+  labels:
+    app: buildkite
+    chart: buildkite-0.2.3
+    release: ponderous-bison
+    heritage: Tiller

@@ -1,0 +1,349 @@
+[debug] Created tunnel using local port: '36325'
+
+[debug] SERVER: "127.0.0.1:36325"
+
+[debug] Original chart version: ""
+[debug] CHART PATH: /home/matt/go/src/k8s.io/charts/stable/rethinkdb
+
+NAME:   pugnacious-dingo
+REVISION: 1
+RELEASED: Sat Jun  2 15:00:33 2018
+CHART: rethinkdb-0.1.4
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+cluster:
+  persistentVolume:
+    accessModes:
+    - ReadWriteOnce
+    annotations: {}
+    enabled: true
+    size: 1Gi
+  podAnnotations: {}
+  replicas: 3
+  resources: {}
+  rethinkCacheSize: 100
+  service:
+    annotations: {}
+  storageClass:
+    enabled: false
+image:
+  name: codylundquist/helm-rethinkdb-cluster
+  pullPolicy: IfNotPresent
+  tag: 0.1.0
+ports:
+  admin: 8080
+  cluster: 29015
+  driver: 28015
+proxy:
+  driverTLS:
+    enabled: false
+  podAnnotations: {}
+  replicas: 1
+  resources: {}
+  service:
+    annotations: {}
+    clusterIP: ""
+    externalIPs: []
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    type: ClusterIP
+rbac:
+  create: true
+rethinkdbPassword: rethinkdb
+serviceAccount:
+  create: true
+  name: null
+
+HOOKS:
+MANIFEST:
+
+---
+# Source: rethinkdb/templates/rethinkdb-secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pugnacious-dingo-rethinkdb
+  labels:
+    app: rethinkdb
+    chart: rethinkdb-0.1.4
+    release: "pugnacious-dingo"
+    heritage: "Tiller"
+type: Opaque
+data:
+  rethinkdb-password: "cmV0aGlua2Ri"
+---
+# Source: rethinkdb/templates/auth/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pugnacious-dingo-rethinkdb
+  labels:
+    app: rethinkdb
+    chart: rethinkdb-0.1.4
+    release: pugnacious-dingo
+    heritage: Tiller
+---
+# Source: rethinkdb/templates/auth/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: pugnacious-dingo-rethinkdb
+  labels:
+    app: rethinkdb
+    chart: rethinkdb-0.1.4
+    release: pugnacious-dingo
+    heritage: Tiller
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: rethinkdb/templates/auth/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pugnacious-dingo-rethinkdb
+  labels:
+    app: rethinkdb
+    chart: rethinkdb-0.1.4
+    release: pugnacious-dingo
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pugnacious-dingo-rethinkdb
+subjects:
+  - kind: ServiceAccount
+    name: pugnacious-dingo-rethinkdb
+    namespace: default
+---
+# Source: rethinkdb/templates/rethinkdb-admin-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pugnacious-dingo-rethinkdb-admin"
+  labels:
+    app: "rethinkdb-admin"
+    chart: rethinkdb-0.1.4
+    heritage: "Tiller"
+    release: "pugnacious-dingo"
+spec:
+  clusterIP: None
+  ports:
+    - port: 8080
+      targetPort: admin
+  selector:
+    app: "rethinkdb-proxy"
+    release: "pugnacious-dingo"
+---
+# Source: rethinkdb/templates/rethinkdb-cluster-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pugnacious-dingo-rethinkdb-cluster"
+  labels:
+    app: "rethinkdb-cluster"
+    chart: rethinkdb-0.1.4
+    heritage: "Tiller"
+    release: "pugnacious-dingo"
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  clusterIP: None
+  ports:
+    - port: 29015
+      targetPort: cluster
+  selector:
+    app: "rethinkdb-cluster"
+    release: "pugnacious-dingo"
+---
+# Source: rethinkdb/templates/rethinkdb-proxy-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: pugnacious-dingo-rethinkdb-proxy
+  labels:
+    app: rethinkdb-proxy
+    chart: rethinkdb-0.1.4
+    heritage: Tiller
+    release: pugnacious-dingo
+  annotations:
+spec:
+  type: ClusterIP
+  clusterIP: ""
+  ports:
+    - port: 28015
+      targetPort: driver
+  selector:
+    app: rethinkdb-proxy
+    release: pugnacious-dingo
+---
+# Source: rethinkdb/templates/rethinkdb-proxy-deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: "pugnacious-dingo-rethinkdb-proxy"
+  labels:
+    app: "rethinkdb-proxy"
+    chart: rethinkdb-0.1.4
+    heritage: "Tiller"
+    release: "pugnacious-dingo"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: pugnacious-dingo-rethinkdb-proxy
+      labels:
+        app: rethinkdb-proxy
+        heritage: "Tiller"
+        release: "pugnacious-dingo"
+        chart: rethinkdb-0.1.4
+      annotations:
+    spec:
+      serviceAccountName: pugnacious-dingo-rethinkdb
+      containers:
+        - name: rethinkdb-proxy
+          image: "codylundquist/helm-rethinkdb-cluster:0.1.0"
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - name: cluster
+              containerPort: 29015
+            - name: driver
+              containerPort: 28015
+            - name: admin
+              containerPort: 8080
+          args:
+            - "--bind"
+            - "all"
+          volumeMounts:
+            - name: "secrets"
+              mountPath: "/secrets"
+          env:
+            - name: PROXY
+              value: "true"
+            - name: RETHINK_CLUSTER_SERVICE
+              value: "pugnacious-dingo-rethinkdb-cluster"
+            - name: RETHINKDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pugnacious-dingo-rethinkdb
+                  key: rethinkdb-password
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            {}
+            
+      volumes:
+        - name: secrets
+          projected:
+            sources:
+            - secret:
+                name: pugnacious-dingo-rethinkdb
+---
+# Source: rethinkdb/templates/rethinkdb-cluster-stateful-set.yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: "pugnacious-dingo-rethinkdb-cluster"
+  labels:
+    app: "rethinkdb-cluster"
+    chart: rethinkdb-0.1.4
+    heritage: "Tiller"
+    release: "pugnacious-dingo"
+spec:
+  serviceName: "pugnacious-dingo-rethinkdb-cluster"
+  replicas: 3
+  template:
+    metadata:
+      name: "pugnacious-dingo-rethinkdb-cluster"
+      labels:
+        app: "rethinkdb-cluster"
+        heritage: "Tiller"
+        release: "pugnacious-dingo"
+        chart: rethinkdb-0.1.4
+      annotations:
+    spec:
+      serviceAccountName: pugnacious-dingo-rethinkdb
+      containers:
+        - name: rethinkdb-cluster
+          image: "codylundquist/helm-rethinkdb-cluster:0.1.0"
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - name: cluster
+              containerPort: 29015
+          args:
+            - "--directory"
+            - "/data/db"
+            - "--bind"
+            - "all"
+            - "--no-http-admin"
+            - "--cache-size"
+            - "100"
+          volumeMounts:
+            - name: "datadir"
+              mountPath: "/data"
+          env:
+            - name: RETHINK_CLUSTER_SERVICE
+              value: "pugnacious-dingo-rethinkdb-cluster"
+            - name: RETHINKDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pugnacious-dingo-rethinkdb
+                  key: rethinkdb-password
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            exec:
+              command:
+                - /rethinkdb-probe
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - /rethinkdb-probe
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            {}
+            
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+      annotations:
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "1Gi"

@@ -1,0 +1,86 @@
+
+---
+# Source: kube-slack/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+---
+# Source: kube-slack/templates/clusterrole.yaml
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: ClusterRole
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+---
+# Source: kube-slack/templates/clusterrolebinding.yaml
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: ClusterRoleBinding
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sad-warthog-kube-slack
+subjects:
+  - kind: ServiceAccount
+    name: sad-warthog-kube-slack
+    namespace: default
+---
+# Source: kube-slack/templates/deployment.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: sad-warthog-kube-slack
+  labels:
+    app: kube-slack
+    chart: kube-slack-0.1.0
+    release: sad-warthog
+    heritage: Tiller
+spec:
+  replicas: 
+  selector:
+    matchLabels:
+      app: kube-slack
+      release: sad-warthog
+  template:
+    metadata:
+      labels:
+        app: kube-slack
+        release: sad-warthog
+    spec:
+      containers:
+        - name: kube-slack
+          image: "willwill/kube-slack:v3.1.1"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SLACK_URL
+              value: 
+            - name: NOT_READY_MIN_TIME
+              value: "60000"
+          resources:
+            {}
+            
+      serviceAccountName: sad-warthog-kube-slack
